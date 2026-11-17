@@ -161,7 +161,7 @@ static void drawFrame() {
   } else {
     text(3, BOTTOM + 3, p->hints(), DIM, SCREEN_W - 6);
   }
-  canvas.pushSprite(0, 0);
+  canvas.pushSprite(&M5Cardputer.Display, 0, 0);  // (the display named here: a global M5Canvas is made before M5Cardputer is)
 }
 
 // ------------------------------------------------------------------------------------------- the pages ---

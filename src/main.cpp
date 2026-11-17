@@ -9,7 +9,6 @@ void setup() {
   Serial.begin(115200);
   auto cfg = M5.config();
   M5Cardputer.begin(cfg, true);  // (with the keyboard)
-  M5Cardputer.Display.setRotation(1);
   board::begin();
   // in recovery mode the USB port is the FM-1's at once: the recover page's job sends its key on it (key_s3.cpp)
   if (hal::recoveryMode()) {
@@ -17,6 +16,8 @@ void setup() {
   }
   ui::begin();
   hal::logRam("up");
+  hal::log("screen: %dx%d, rotation %d", (int)M5Cardputer.Display.width(), (int)M5Cardputer.Display.height(),
+           (int)M5Cardputer.Display.getRotation());
 }
 
 void loop() {
