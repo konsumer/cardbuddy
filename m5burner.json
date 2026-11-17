@@ -4,7 +4,7 @@
     "description": "Swap, back up and recover M-VAVE FM-1 firmware, and manage its sounds, samples and songs. fm1buddy for the Cardputer.",
     "category": "cardputer",
     "author": "konsumer",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "github": "https://github.com/konsumer/cardbuddy"
   },
   "files": {
