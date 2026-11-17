@@ -108,7 +108,7 @@ struct FirmwarePage : Page {
       } else if (!jobs::download(f)) {
         toast("Busy with something else.", true);
       }
-    } else if (k.ch == 'i' || k.enter) {
+    } else if (k.enter) {
       install(f);
     }
   }
