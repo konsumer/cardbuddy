@@ -25,7 +25,7 @@ All of it through fm1buddy's own code (`lib/fm1core`, and `lib/fm1s3` for the ES
 - **SLOOP**: back it up, restore a backup or one project of it (`0`, `a`-`d`), save and load songs, load `.wav` files into a sample slot (`1`-`4`)
 - **MIDI**: the devices on the hub, routing between them (`r`, with `/midimap.txt`), Bluetooth MIDI (`b`)
 - **Keys**: the keyboard as a MIDI controller, two octaves as trackers lay them out (`z s x d c v`... and `q 2 w 3 e r`...), `-` `=` octave, `[` `]` channel
-- **Settings**: theme, brightness, Bluetooth MIDI, USB MIDI on a computer, USB disk (the SD card as a computer's drive)
+- **Settings**: Wi-Fi, theme, brightness, Bluetooth MIDI, USB MIDI on a computer, USB disk (the SD card as a computer's drive)
 
 ## Using it
 

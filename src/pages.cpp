@@ -45,8 +45,7 @@ static const Item HOME[] = {
     {"Sounds", ".syx, setups, SLOOP", []() { return soundsPage(); }},
     {"MIDI", "Devices, routing", []() { return midiPage(); }},
     {"Keys", "Play it from here", []() { return keysPage(); }},
-    {"Wi-Fi", "For the Hub", []() { return wifiPage(); }},
-    {"Settings", "Theme, brightness", []() { return settingsPage(); }},
+    {"Settings", "Wi-Fi, theme, brightness", []() { return settingsPage(); }},
     {"About", "Version, SD card, battery", []() { return aboutPage(); }},
 };
 #define HOME_N ((int)(sizeof HOME / sizeof HOME[0]))
@@ -96,7 +95,7 @@ struct FirmwarePage : Page {
       scroll++;
     } else if (k.ch == 'd' && fromHub && !f.onSd) {
       if (!settings.ssid[0]) {
-        toast("Set up Wi-Fi first (home > Wi-Fi).", true);
+        toast("Set up Wi-Fi first (Settings > Wi-Fi).", true);
       } else if (!jobs::download(f)) {
         toast("Busy with something else.", true);
       }
@@ -201,7 +200,7 @@ struct FirmwaresPage : Page {
       push(new FirmwarePage(catalog::details(list(), rows[sel]), hub));
     } else if (k.ch == 'u' && hub && q.empty()) {
       if (!settings.ssid[0]) {
-        toast("Set up Wi-Fi first (home > Wi-Fi).", true);
+        toast("Set up Wi-Fi first (Settings > Wi-Fi).", true);
       } else if (!jobs::hubList()) {
         toast("Busy with something else.", true);
       }
@@ -371,49 +370,79 @@ Page* ui::wifiPage() {
 
 // ----------------------------------------------------------------------------------------------- settings ---
 struct SettingsPage : Page {
+  enum { WIFI,
+         THEME,
+         BRIGHTNESS,
+         HUB_AUTO,
+         BLUETOOTH,
+         COMPUTER,
+         DISK,
+         N };
   int sel = 0;
-  static const int N = 6;
   const char* title() override { return "Settings"; }
-  const char* hints() override { return "< > change  esc back"; }
+  const char* hints() override { return sel == WIFI || sel == DISK ? "esc back" : "< > change  esc back"; }
   void key(const Key& k) override {
     if (k.up) {
       sel = (sel + N - 1) % N;
-    } else if (k.down) {
+      return;
+    }
+    if (k.down) {
       sel = (sel + 1) % N;
-    } else if (k.left || k.right || k.enter) {
-      int d = k.left ? -1 : 1;
-      if (sel == 0) {
+      return;
+    }
+    if (!k.left && !k.right && !k.enter) {
+      return;
+    }
+    int d = k.left ? -1 : 1;
+    switch (sel) {
+      case WIFI:
+        if (k.enter) {
+          push(wifiPage());
+        }
+        return;
+      case THEME:
         settings.theme = (settings.theme + THEME_COUNT + d) % THEME_COUNT;
-      } else if (sel == 1) {
+        break;
+      case BRIGHTNESS:
         settings.brightness = std::max(10, std::min(100, settings.brightness + d * 10));
-      } else if (sel == 2) {
+        break;
+      case HUB_AUTO:
         settings.hubAuto = !settings.hubAuto;
-      } else if (sel == 3) {
+        break;
+      case BLUETOOTH: {
         hal::bleOn(!hal::bleIsOn());
         bool on = hal::bleIsOn();
         hal::save("bluetooth", &on, 1);
-      } else if (sel == 4) {
+        return;
+      }
+      case COMPUTER:
         hal::computerMidiSet(!hal::computerMidi());  // (it restarts, if a computer is on the port)
-      } else if (sel == 5 && k.enter) {
+        return;
+      case DISK:
+        if (!k.enter) {
+          return;
+        }
         if (!hal::sd() || jobs::running) {
           toast(hal::sd() ? "Busy with something else." : "No SD card.", true);
         } else {
           hal::diskModeSet(true);  // (it restarts as a USB disk)
         }
-      }
-      settingsSave();
-      applyTheme();
+        return;
     }
+    settingsSave();
+    applyTheme();
   }
   void draw() override {
-    char b[N][24];
-    snprintf(b[0], 24, "%s", THEMES[settings.theme % THEME_COUNT].name);
-    snprintf(b[1], 24, "%d%%", settings.brightness);
-    snprintf(b[2], 24, "%s", settings.hubAuto ? "on" : "off");
-    snprintf(b[3], 24, "%s", hal::bleIsOn() ? "on" : "off");
-    snprintf(b[4], 24, "%s", hal::computerMidi() ? "USB MIDI" : "serial");
-    snprintf(b[5], 24, "enter");
-    const char* names[N] = {"Theme", "Brightness", "Update the Hub list", "Bluetooth MIDI", "On a computer", "USB disk (SD card)"};
+    char b[N][34];
+    snprintf(b[WIFI], 34, "%s", settings.ssid[0] ? settings.ssid : "none");
+    snprintf(b[THEME], 34, "%s", THEMES[settings.theme % THEME_COUNT].name);
+    snprintf(b[BRIGHTNESS], 34, "%d%%", settings.brightness);
+    snprintf(b[HUB_AUTO], 34, "%s", settings.hubAuto ? "on" : "off");
+    snprintf(b[BLUETOOTH], 34, "%s", hal::bleIsOn() ? "on" : "off");
+    snprintf(b[COMPUTER], 34, "%s", hal::computerMidi() ? "USB MIDI" : "serial");
+    snprintf(b[DISK], 34, "enter");
+    const char* names[N] = {"Wi-Fi", "Theme", "Brightness", "Update the Hub list", "Bluetooth MIDI", "On a computer",
+                            "USB disk (SD card)"};
     for (int i = 0; i < N; i++) {
       int y = TOP + 2 + i * ROW;
       if (i == sel) {
