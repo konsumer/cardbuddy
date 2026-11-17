@@ -2,6 +2,7 @@
   "name": "cardbuddy",
   "private": true,
   "scripts": {
-    "fmt": "npx -y prettier -w README.md m5burner.json site .github && clang-format -i src/*.cpp src/*.h"
+    "fmt": "npx -y prettier -w README.md m5burner.json site .github && clang-format -i src/*.cpp src/*.h",
+    "start": "npx -y live-server site"
   }
 }
