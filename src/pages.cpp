@@ -53,7 +53,7 @@ static const Item HOME[] = {
 struct HomePage : Page {
   int sel = 0, scroll = 0;
   const char* title() override { return "cardbuddy"; }
-  const char* hints() override { return ""; }
+  const char* hints() override { return HOME[sel].what; }  // (what the one chosen is)
   bool closing() override { return false; }
   void key(const Key& k) override {
     if (k.up) {
@@ -65,9 +65,7 @@ struct HomePage : Page {
     }
   }
   void draw() override {
-    listRows(HOME_N, sel, scroll, TOP + 2, 9, [](int i, int y, bool s, void*) {
-      text(6, y + 2, HOME[i].name, s ? TEXT : DIM);
-      textRight(SCREEN_W - 6, y + 2, HOME[i].what, s ? DIM : OFF); }, 0);
+    listRows(HOME_N, sel, scroll, TOP + 2, 9, [](int i, int y, bool s, void*) { text(6, y + 2, HOME[i].name, s ? TEXT : DIM); }, 0);
   }
 };
 
