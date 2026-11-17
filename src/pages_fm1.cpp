@@ -150,7 +150,7 @@ struct AskPage : Page {
   std::function<void()> yes;
   AskPage(const std::string& t, const std::string& q, std::function<void()> yes) : t(t), q(q), yes(yes) {}
   const char* title() override { return t.c_str(); }
-  const char* hints() override { return "y yes  ` no"; }
+  const char* hints() override { return "y yes  esc no"; }
   void key(const Key& k) override {
     if (k.ch == 'y' || k.ch == 'Y') {
       auto f = yes;
@@ -235,7 +235,7 @@ static std::vector<Choice> choices() {
 }
 
 struct BackupPage : ListPage {
-  BackupPage() : ListPage("Backup & recover", "enter go  ; . move  ` back") {
+  BackupPage() : ListPage("Backup & recover", "esc back") {
     fill = [](ListPage& p) {
       int d = fm1::current();
       const Fm1Id* id = fm1::known(d);
@@ -395,7 +395,7 @@ static Page* setupsPage();
 static Page* sloopPage();
 
 static Page* syxPage(const std::string& folder) {
-  ListPage* p = new ListPage(folder.empty() ? "Sounds: /syx" : "/syx/" + folder, "enter send  ` back");
+  ListPage* p = new ListPage(folder.empty() ? "Sounds: /syx" : "/syx/" + folder, "enter send  esc back");
   p->empty = "No .syx files here (" SYX_DIR " on the SD card).";
   p->fill = [folder](ListPage& p) {
     for (const sounds::File& f : sounds::list(folder)) {
@@ -426,7 +426,7 @@ static Page* syxPage(const std::string& folder) {
 }
 
 static Page* setupsPage() {
-  ListPage* p = new ListPage("Setups", "enter load  e export  ` back");
+  ListPage* p = new ListPage("Setups", "enter load  e export  esc back");
   p->empty = "No setups yet: Sounds > Keep its song and kits.";
   p->fill = [](ListPage& p) {
     for (const std::string& s : sounds::setups()) {
@@ -456,7 +456,7 @@ static Page* setupsPage() {
 }
 
 struct SoundsPage : ListPage {
-  SoundsPage() : ListPage("Sounds", "enter go  p ask again  ` back") {
+  SoundsPage() : ListPage("Sounds", "p ask again  esc back") {
     fill = [](ListPage& p) {
       int d = device();
       if (d < 0) {
@@ -514,7 +514,7 @@ Page* ui::soundsPage() {
 // ----------------------------------------------------------------------------------------------- SLOOP ---
 static Page* sloopFiles(bool songs) {
   ListPage* p = new ListPage(songs ? "SLOOP: songs" : "SLOOP: backups",
-                             songs ? "enter load  ` back" : "enter restore  0 a-d project  ` back");
+                             songs ? "enter load  esc back" : "enter restore  0 a-d project  esc back");
   p->empty = songs ? "No songs in " SLOOP_SONGS_DIR "." : "No backups in " SLOOP_DIR ".";
   p->fill = [songs](ListPage& p) {
     for (const std::string& f : songs ? sloop::songs() : sloop::backups()) {
@@ -551,7 +551,7 @@ static Page* sloopFiles(bool songs) {
 }
 
 static Page* sloopSamples() {
-  ListPage* p = new ListPage("SLOOP: samples", "1-4 into that slot  ` back");
+  ListPage* p = new ListPage("SLOOP: samples", "1-4 into that slot  esc back");
   p->empty = "No .wav files or folders of them in " SLOOP_DIR "/samples.";
   p->fill = [](ListPage& p) {
     for (const std::string& s : sloop::sampleSources()) {
@@ -574,7 +574,7 @@ static Page* sloopSamples() {
 }
 
 static Page* sloopPage() {
-  ListPage* p = new ListPage("SLOOP", "enter go  ` back");
+  ListPage* p = new ListPage("SLOOP", "esc back");
   p->fill = [](ListPage& p) {
     p.rows.push_back({"Back it up", SLOOP_DIR, []() {
                         if (!jobs::sloopBackup(device())) {
@@ -605,7 +605,7 @@ static void saveFlag(const char* key, bool on) {
 }
 
 struct MidiPage : ListPage {
-  MidiPage() : ListPage("MIDI", "r routing  b bluetooth  k keys  ` back") {
+  MidiPage() : ListPage("MIDI", "r routing  b bluetooth  k keys  esc back") {
     fill = [](ListPage& p) {
       midi::Dev v;
       for (int d = 0; d < MIDI_DEVS; d++) {
@@ -673,7 +673,7 @@ struct KeysPage : Page {
   int octave = 4, channel = 0;
   bool down[128] = {};
   const char* title() override { return "Keys"; }
-  const char* hints() override { return "- = octave  [ ] channel  fn+` back"; }
+  const char* hints() override { return "- = octave  [ ] channel  fn+esc back"; }
   bool typing() override { return true; }  // (every key is a note: fn for the arrows, and back)
   bool raw() override { return true; }
   KeysPage() {

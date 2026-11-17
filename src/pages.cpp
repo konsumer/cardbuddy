@@ -54,7 +54,7 @@ static const Item HOME[] = {
 struct HomePage : Page {
   int sel = 0, scroll = 0;
   const char* title() override { return "cardbuddy"; }
-  const char* hints() override { return "; . move  enter open"; }
+  const char* hints() override { return ""; }
   bool closing() override { return false; }
   void key(const Key& k) override {
     if (k.up) {
@@ -85,9 +85,9 @@ struct FirmwarePage : Page {
   const char* title() override { return f.name.c_str(); }
   const char* hints() override {
     if (fromHub && !f.onSd) {
-      return "d download  i install  ` back";
+      return "d download  i install  esc back";
     }
-    return "i install  ; . scroll  ` back";
+    return "i install  esc back";
   }
   void key(const Key& k) override {
     if (k.up && scroll > 0) {
@@ -150,7 +150,7 @@ struct FirmwaresPage : Page {
   FwList& list() { return hub ? catalog::hub : catalog::sd; }
   const char* title() override { return hub ? "Firmware: Hub" : "Firmware: SD card"; }
   const char* hints() override {
-    return hub ? "type to find  tab SD  u update" : "type to find  tab Hub  enter open";
+    return hub ? "type to find  tab SD  u update" : "type to find  tab Hub";
   }
   bool typing() override { return false; }
   bool closing() override {
@@ -267,7 +267,7 @@ struct TextPage : Page {
   TextPage(const char* t, const char* prompt, bool secret, void (*done)(const std::string&, void*), void* arg)
       : t(t), prompt(prompt), secret(secret), done(done), arg(arg) {}
   const char* title() override { return t; }
-  const char* hints() override { return secret ? "enter ok  tab show  fn+` back" : "enter ok  fn+` back"; }
+  const char* hints() override { return secret ? "enter ok  tab show  fn+esc back" : "enter ok  fn+esc back"; }
   bool typing() override { return true; }
   void key(const Key& k) override {
     if (k.enter) {
@@ -305,7 +305,7 @@ struct WifiPage : Page {
   bool scanned = false;
   WifiPage() { jobs::scan(); }
   const char* title() override { return "Wi-Fi"; }
-  const char* hints() override { return "enter join  r scan again  ` back"; }
+  const char* hints() override { return "enter join  r scan again  esc back"; }
   void key(const Key& k) override {
     int n = aps.size();
     if (k.up && n) {
@@ -371,7 +371,7 @@ struct SettingsPage : Page {
   int sel = 0;
   static const int N = 6;
   const char* title() override { return "Settings"; }
-  const char* hints() override { return "; . move  , / enter change  ` back"; }
+  const char* hints() override { return "< > change  esc back"; }
   void key(const Key& k) override {
     if (k.up) {
       sel = (sel + N - 1) % N;
@@ -433,7 +433,7 @@ Page* ui::settingsPage() {
 // -------------------------------------------------------------------------------------------------- about ---
 struct AboutPage : Page {
   const char* title() override { return "About"; }
-  const char* hints() override { return "` back"; }
+  const char* hints() override { return "esc back"; }
   void key(const Key&) override {}
   void tick() override {
     static uint32_t t;

@@ -32,7 +32,7 @@ enum Color : uint8_t { BG,
 struct Page {
   virtual ~Page() {}
   virtual const char* title() = 0;
-  virtual const char* hints() { return "; . move  enter open  ` back"; }
+  virtual const char* hints() { return "esc back"; }
   virtual bool typing() { return false; }  // keys are text (the arrows need Fn)
   virtual void key(const Key& k) = 0;
   virtual void draw() = 0;                 // the body: y from TOP to BOTTOM
