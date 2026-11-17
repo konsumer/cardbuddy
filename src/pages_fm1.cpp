@@ -365,18 +365,19 @@ Page* ui::recoverPage() {
 // USB disk mode: the SD card is a computer's drive
 struct DiskPage : Page {
   const char* title() override { return "USB disk"; }
-  const char* hints() override { return "enter done"; }
+  const char* hints() override { return "eject it on the computer to go back"; }
   bool closing() override { return false; }
-  void key(const Key& k) override {
-    if (k.enter) {
-      hal::diskModeSet(false);
+  void key(const Key&) override {}
+  void tick() override {
+    if (hal::diskState() == hal::DISK_EJECTED) {
+      hal::diskModeSet(false);  // (ejected: back as it was, by itself)
     }
+    redraw();
   }
-  void tick() override { redraw(); }
   void draw() override {
     int s = hal::diskState();
     const char* what = s == hal::DISK_MOUNTED   ? "A computer has the SD card. Eject it there before you're done."
-                       : s == hal::DISK_EJECTED ? "Ejected: it's safe. Enter to go back."
+                       : s == hal::DISK_EJECTED ? "Ejected: back in a moment."
                                                 : "Plug the Cardputer into a computer: the SD card shows up as a drive.";
     wrap(6, TOP + 6, SCREEN_W - 12, what, s == hal::DISK_EJECTED ? GOOD : TEXT, 6);
   }

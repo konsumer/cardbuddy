@@ -45,6 +45,14 @@ static const Item HOME[] = {
     {"Sounds", ".syx, setups, SLOOP", []() { return soundsPage(); }},
     {"MIDI", "Devices, routing", []() { return midiPage(); }},
     {"Keys", "Play it from here", []() { return keysPage(); }},
+    {"USB disk", "The SD card, on a computer", []() -> Page* {
+       if (!hal::sd() || jobs::running) {
+         toast(hal::sd() ? "Busy with something else." : "No SD card.", true);
+       } else {
+         hal::diskModeSet(true);  // (it restarts as a USB disk)
+       }
+       return 0;
+     }},
     {"Settings", "Wi-Fi, theme, brightness", []() { return settingsPage(); }},
     {"About", "Version, SD card, battery", []() { return aboutPage(); }},
 };
@@ -61,7 +69,9 @@ struct HomePage : Page {
     } else if (k.down) {
       sel = (sel + 1) % HOME_N;
     } else if (k.enter || k.right) {
-      push(HOME[sel].open());
+      if (Page* p = HOME[sel].open()) {
+        push(p);
+      }
     }
   }
   void draw() override {
@@ -374,11 +384,10 @@ struct SettingsPage : Page {
          HUB_AUTO,
          BLUETOOTH,
          COMPUTER,
-         DISK,
          N };
   int sel = 0;
   const char* title() override { return "Settings"; }
-  const char* hints() override { return sel == WIFI || sel == DISK ? "esc back" : "< > change  esc back"; }
+  const char* hints() override { return sel == WIFI ? "esc back" : "< > change  esc back"; }
   void key(const Key& k) override {
     if (k.up) {
       sel = (sel + N - 1) % N;
@@ -416,16 +425,6 @@ struct SettingsPage : Page {
       case COMPUTER:
         hal::computerMidiSet(!hal::computerMidi());  // (it restarts, if a computer is on the port)
         return;
-      case DISK:
-        if (!k.enter) {
-          return;
-        }
-        if (!hal::sd() || jobs::running) {
-          toast(hal::sd() ? "Busy with something else." : "No SD card.", true);
-        } else {
-          hal::diskModeSet(true);  // (it restarts as a USB disk)
-        }
-        return;
     }
     settingsSave();
     applyTheme();
@@ -438,9 +437,7 @@ struct SettingsPage : Page {
     snprintf(b[HUB_AUTO], 34, "%s", settings.hubAuto ? "on" : "off");
     snprintf(b[BLUETOOTH], 34, "%s", hal::bleIsOn() ? "on" : "off");
     snprintf(b[COMPUTER], 34, "%s", hal::computerMidi() ? "USB MIDI" : "serial");
-    snprintf(b[DISK], 34, "enter");
-    const char* names[N] = {"Wi-Fi", "Theme", "Brightness", "Update the Hub list", "Bluetooth MIDI", "On a computer",
-                            "USB disk (SD card)"};
+    const char* names[N] = {"Wi-Fi", "Theme", "Brightness", "Update the Hub list", "Bluetooth MIDI", "On a computer"};
     for (int i = 0; i < N; i++) {
       int y = TOP + 2 + i * ROW;
       if (i == sel) {
