@@ -310,11 +310,14 @@ static bool readKey(ui::Key& k) {
   }
   k = {};
   k.enter = s.enter;
-  k.del = s.del;
+  k.del = s.backspace || s.del;  // (the del key is backspace; fn+del, forward delete)
   k.tab = s.tab;
+  // fn with ` ; . , /: esc and the arrows (the library says so itself)
+  k.back = s.esc;
+  k.up = s.up, k.down = s.down, k.left = s.left, k.right = s.right;
   bool typing = stack.back()->typing();
   for (char c : s.word) {
-    bool nav = s.fn || !typing;
+    bool nav = !typing;  // (nothing being typed: ` ; . , / alone are esc and the arrows too)
     if (nav && c == ';') {
       k.up = true;
     } else if (nav && c == '.') {
