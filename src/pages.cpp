@@ -1,5 +1,6 @@
 // The pages: home, the firmware lists (the SD card's and the Hub's) and a firmware's details, Wi-Fi, settings, about
 #include <M5Cardputer.h>
+#include <strings.h>
 
 #include <algorithm>
 #include <vector>
@@ -145,21 +146,37 @@ struct FirmwarePage : Page {
 };
 
 // -------------------------------------------------------------------------------------- the firmwares ---
+// a firmware on the SD card with this file name (the Hub's: what's on the card already)
+static bool onSd(const char* file) {
+  for (const FwItem& x : catalog::sd.items) {
+    if (!strcasecmp(catalog::sd.str(x.file), file)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// The SD card's firmwares are a list in memory (catalog::sd: a few). The Hub's are 700 or so: too many to keep here
+// (catalog::keepHub is off), so its list stays on the SD card (HUB_LIST): what's found is where each one's line is, and
+// only the rows on screen are read
 struct FirmwaresPage : Page {
   bool hub;
-  std::string q;  // what's typed: the rows with it in their name, author or file
-  std::vector<int> rows;
+  std::string q;               // what's typed: the rows with it in their name, author or file
+  std::vector<uint32_t> rows;  // the SD card's: indexes in catalog::sd; the Hub's: where their lines are
+  struct Shown {
+    std::string name, version, file;
+    uint8_t flags;
+  };
+  std::vector<std::pair<uint32_t, Shown>> shown;  // the Hub's rows read so far (only those near the screen)
   uint32_t seen = 0xFFFFFFFF;
   size_t seenSize = 0;
   int sel = 0, scroll = 0;
   FirmwaresPage(bool hub) : hub(hub) {}
 
-  FwList& list() { return hub ? catalog::hub : catalog::sd; }
   const char* title() override { return hub ? "Firmware: Hub" : "Firmware: SD card"; }
   const char* hints() override {
     return hub ? "type to find  tab SD  u update" : "type to find  tab Hub";
   }
-  bool typing() override { return false; }
   bool closing() override {
     if (!q.empty()) {
       q.clear();
@@ -168,24 +185,70 @@ struct FirmwaresPage : Page {
     }
     return true;
   }
+  static bool matches(const FwList& l, const FwItem& it, const std::string& q) {
+    return has(l.str(it.name), q) || has(l.str(it.author), q) || has(l.str(it.file), q);
+  }
   void filter() {
-    FwList& l = list();
     rows.clear();
-    for (size_t i = 0; i < l.size(); i++) {
-      const FwItem& it = l[i];
-      if (has(l.str(it.name), q) || has(l.str(it.author), q) || has(l.str(it.file), q)) {
-        rows.push_back(i);
+    shown.clear();
+    if (hub) {
+      catalog::eachHub([](const FwList& one, void* arg) {
+        FirmwaresPage* p = (FirmwaresPage*)arg;
+        if (matches(one, one[0], p->q)) {
+          p->rows.push_back(one[0].line);
+        }
+        return true;
+      },
+                       this);
+    } else {
+      for (size_t i = 0; i < catalog::sd.size(); i++) {
+        if (matches(catalog::sd, catalog::sd[i], q)) {
+          rows.push_back(i);
+        }
       }
     }
     sel = std::min(sel, std::max(0, (int)rows.size() - 1));
     seen = FwList::changes;
-    seenSize = l.size();
+    seenSize = catalog::sd.size();
+  }
+  // the Hub's row at line, read once
+  const Shown& hubRow(uint32_t line) {
+    for (auto& s : shown) {
+      if (s.first == line) {
+        return s.second;
+      }
+    }
+    if (shown.size() > 40) {
+      shown.clear();
+    }
+    FwList one;
+    Shown r{"?", "", "", 0};
+    if (catalog::hubAt(line, one)) {
+      r = {one.str(one[0].name), one.str(one[0].version), one.str(one[0].file), one[0].flags};
+    }
+    shown.push_back({line, r});
+    return shown.back().second;
   }
   void tick() override {
-    if (seen != FwList::changes || seenSize != list().size()) {
+    if (seen != FwList::changes || seenSize != catalog::sd.size()) {
       filter();
       redraw();
     }
+  }
+  void open() {
+    Firmware f;
+    if (hub) {
+      FwList one;
+      if (!catalog::hubAt(rows[sel], one)) {
+        toast("Can't read it from the SD card.", true);
+        return;
+      }
+      f = catalog::details(one, 0);
+      f.onSd = onSd(f.file.c_str());
+    } else {
+      f = catalog::details(catalog::sd, rows[sel]);
+    }
+    push(new FirmwarePage(f, hub));
   }
   void key(const Key& k) override {
     int n = rows.size();
@@ -196,7 +259,7 @@ struct FirmwaresPage : Page {
     } else if (k.left) {
       sel = std::max(0, sel - 8);
     } else if (k.right) {
-      sel = std::min(n - 1, sel + 8);
+      sel = std::max(0, std::min(n - 1, sel + 8));
     } else if (k.tab) {
       hub = !hub;
       sel = scroll = 0;
@@ -205,31 +268,26 @@ struct FirmwaresPage : Page {
       q.pop_back();
       filter();
     } else if (k.enter && n) {
-      push(new FirmwarePage(catalog::details(list(), rows[sel]), hub));
+      open();
     } else if (k.ch == 'u' && hub && q.empty()) {
       if (!settings.ssid[0]) {
         toast("Set up Wi-Fi first (Settings > Wi-Fi).", true);
       } else if (!jobs::hubList()) {
         toast("Busy with something else.", true);
       }
-    } else if (k.ch && k.ch != ' ' && !(k.ch == 'u' && hub && q.empty())) {
+    } else if (k.ch) {
       q += k.ch;
       sel = 0;
-      filter();
-    } else if (k.ch == ' ') {
-      q += ' ';
       filter();
     }
   }
   void jobDone() override {
     if (jobs::kind == jobs::HUB && jobs::ok) {
       toast("The Hub's list is up to date.");
+      filter();
     }
   }
   void draw() override {
-    if (seen != FwList::changes) {
-      filter();
-    }
     int y0 = TOP + 2;
     if (!q.empty()) {
       std::string s = "find: " + q + "_";
@@ -246,14 +304,24 @@ struct FirmwaresPage : Page {
     }
     listRows(rows.size(), sel, scroll, y0, (BOTTOM - y0) / ROW, [](int i, int y, bool s, void* arg) {
       FirmwaresPage* p = (FirmwaresPage*)arg;
-      FwList& l = p->list();
-      const FwItem& it = l[p->rows[i]];
-      uint8_t mark = (it.flags & FwItem::ON_SD) && p->hub ? GOOD : (it.flags & FwItem::BETA) ? WARN : 0;
+      const char *name, *version;
+      bool there, beta;
+      if (p->hub) {
+        const Shown& r = p->hubRow(p->rows[i]);
+        name = r.name.c_str(), version = r.version.c_str();
+        there = onSd(r.file.c_str()), beta = r.flags & FwItem::BETA;
+      } else {
+        const FwList& l = catalog::sd;
+        const FwItem& it = l[p->rows[i]];
+        name = l.str(it.name), version = l.str(it.version);
+        there = false, beta = it.flags & FwItem::BETA;
+      }
+      uint8_t mark = there ? GOOD : beta ? WARN : 0;
       if (mark) {
         fill(4, y + 4, 3, 3, mark);
       }
-      text(10, y + 2, l.str(it.name), s ? TEXT : DIM, 150);
-      textRight(SCREEN_W - 6, y + 2, l.str(it.version), s ? DIM : OFF); }, this);
+      text(10, y + 2, name, s ? TEXT : DIM, 150);
+      textRight(SCREEN_W - 6, y + 2, version, s ? DIM : OFF); }, this);
   }
 };
 

@@ -213,8 +213,9 @@ static void bootBegin() {
   hal::spawn(
       [](void*) {
         std::string err;
-        if (!catalog::loadHub(bootHub, bootUpdated)) {
-          catalog::parseHub(bootHub, bootUpdated, err);
+        // (the Hub's list stays on the SD card: catalog::keepHub is off. One left half-read is finished)
+        if (!catalog::hubWhen(bootUpdated)) {
+          catalog::writeHub(bootUpdated, err);
         }
         bootUnknown = catalog::scanSdInto(bootHub, bootSd);
         hal::log("boot: hub %u firmwares, sd %u", (unsigned)bootHub.size(), (unsigned)bootSd.size());
@@ -336,6 +337,7 @@ static bool readKey(ui::Key& k) {
 }
 
 void ui::begin() {
+  catalog::keepHub = false;  // (the Hub's list, ~100 KB, stays on the SD card: read as it's needed)
   settingsLoad();
   canvas.setColorDepth(4);
   canvas.createSprite(SCREEN_W, SCREEN_H);
