@@ -392,9 +392,28 @@ void ui::begin() {
   }
 }
 
+// an arrow held: it goes again after a moment, and faster the longer it's held (8 a second, up to 40)
+static ui::Key held;
+static uint32_t heldAt, nextAt;
+
+static bool arrow(const ui::Key& k) {
+  return (k.up || k.down || k.left || k.right) && !k.ch && !k.enter && !k.back && !k.del && !k.tab;
+}
+
 void ui::loop() {
   Key k;
-  if (readKey(k)) {
+  bool got = readKey(k);
+  uint32_t now = hal::millis();
+  if (got) {
+    held = arrow(k) && !stack.back()->raw() ? k : Key{};
+    heldAt = now, nextAt = now + 350;
+  } else if (arrow(held) && M5Cardputer.Keyboard.isPressed() && (int32_t)(now - nextAt) >= 0) {
+    k = held, got = true;
+    nextAt = now + std::max<uint32_t>(25, 125 - (now - heldAt) / 20);
+  } else if (!M5Cardputer.Keyboard.isPressed()) {
+    held = {};
+  }
+  if (got) {
     Page* p = stack.back();
     if (k.back && p->closing()) {
       pop();
