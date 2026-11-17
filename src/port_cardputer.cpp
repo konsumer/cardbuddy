@@ -13,18 +13,21 @@
 #define SD_MOSI 14
 #define SD_CS 12
 #define SD_GATE 5
+// files open at once: each takes a 4 KB buffer of the internal RAM from the start (5 by default). The most: a
+// firmware, its flash file, the log, and the Hub's list (its page open)
+#define SD_FILES 4
 
 bool port::sdBegin() {
   pinMode(SD_GATE, OUTPUT);
   digitalWrite(SD_GATE, HIGH);
   delay(2);
   SPI.begin(SD_SCK, SD_MISO, SD_MOSI, SD_CS);
-  if (SD.begin(SD_CS, SPI, 25000000, "/sdcard")) {
+  if (SD.begin(SD_CS, SPI, 25000000, "/sdcard", SD_FILES)) {
     return true;
   }
   SD.end();
   delay(10);
-  return SD.begin(SD_CS, SPI, 16000000, "/sdcard");
+  return SD.begin(SD_CS, SPI, 16000000, "/sdcard", SD_FILES);
 }
 
 bool port::sdSpace(uint64_t& total, uint64_t& used) {

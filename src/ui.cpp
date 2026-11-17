@@ -25,6 +25,7 @@ static bool dirty = true;
 static std::string toastText;
 static bool toastBad;
 static uint32_t toastUntil, lastTick, seenFinished;
+static char jobStatus[96];
 
 static const Theme& theme() {
   return THEMES[settings.theme < THEME_COUNT ? settings.theme : 0];
@@ -52,15 +53,18 @@ void ui::fill(int x, int y, int w, int h, uint8_t color) {
   canvas.fillRect(x, y - bandY, w, h, color);
 }
 
+// (no heap: it's drawn once a band, many times a second, while a download needs every byte)
 void ui::text(int x, int y, const char* s, uint8_t color, int maxW) {
   canvas.setTextColor(color);
   if (maxW > 0 && canvas.textWidth(s) > maxW) {
-    std::string t = s;
-    while (!t.empty() && canvas.textWidth((t + "~").c_str()) > maxW) {
-      t.pop_back();
+    char t[128];
+    int n = std::min<int>(strlen(s), sizeof t - 2);
+    memcpy(t, s, n);
+    t[n] = '~', t[n + 1] = 0;
+    while (n > 0 && canvas.textWidth(t) > maxW) {
+      t[--n] = '~', t[n + 1] = 0;
     }
-    t += "~";
-    canvas.drawString(t.c_str(), x, y - bandY);
+    canvas.drawString(t, x, y - bandY);
     return;
   }
   canvas.drawString(s, x, y - bandY);
@@ -80,36 +84,34 @@ void ui::bar(int x, int y, int w, int h, uint32_t done, uint32_t total) {
 
 int ui::wrap(int x, int y, int w, const char* s, uint8_t color, int maxLines) {
   int lines = 0;
-  std::string line, word;
-  auto flush = [&]() {
-    if (lines < maxLines) {
-      text(x, y + lines * 10, line.c_str(), color, w);
+  char line[128];
+  while (*s) {
+    // as many words as fit (or one too long, cut), up to a line break
+    int n = 0, fit = 0;
+    for (;;) {
+      while (s[n] && s[n] != ' ' && s[n] != '\n' && n < (int)sizeof line - 1) {
+        n++;
+      }
+      memcpy(line, s, n);
+      line[n] = 0;
+      if (fit && canvas.textWidth(line) > w) {
+        break;
+      }
+      fit = n;
+      if (s[n] != ' ' || n >= (int)sizeof line - 1) {
+        break;
+      }
+      n++;
+    }
+    line[fit] = 0;
+    if (y + lines * 10 + 10 > bandY && y + lines * 10 < bandY + BAND && lines < maxLines) {
+      text(x, y + lines * 10, line, color, w);  // (only in the band being drawn)
     }
     lines++;
-    line.clear();
-  };
-  for (const char* p = s;; p++) {
-    if (*p && *p != ' ' && *p != '\n') {
-      word += *p;
-      continue;
+    s += fit;
+    if (*s == ' ' || *s == '\n') {
+      s++;
     }
-    std::string next = line.empty() ? word : line + " " + word;
-    if (canvas.textWidth(next.c_str()) > w && !line.empty()) {
-      flush();
-      line = word;
-    } else {
-      line = next;
-    }
-    word.clear();
-    if (*p == '\n') {
-      flush();
-    }
-    if (!*p) {
-      break;
-    }
-  }
-  if (!line.empty()) {
-    flush();
   }
   return std::min(lines, maxLines);
 }
@@ -152,18 +154,17 @@ static void drawBand() {
   char right[40];
   int level = M5Cardputer.Power.getBatteryLevel();
   const Fm1Id* id = fm1::known(fm1::current());
-  snprintf(right, sizeof right, "%s%s%d%%", id ? (std::string(fm1::machineName()) + "  ").c_str() : "",
-           hal::wifiOn() ? "wifi  " : "", level);
+  snprintf(right, sizeof right, "%s%s%s%d%%", id ? fm1::machineName() : "", id ? "  " : "", hal::wifiOn() ? "wifi  " : "",
+           level);
   textRight(SCREEN_W - 3, 3, right, DIM);
   p->draw();
   // the bottom: a job, a toast, or the page's keys
   fill(0, BOTTOM, SCREEN_W, SCREEN_H - BOTTOM, PANEL);
   if (jobs::running) {
-    std::string s = jobs::status();
     if (jobs::total) {
       bar(0, BOTTOM, SCREEN_W, 2, jobs::done, jobs::total);
     }
-    text(3, BOTTOM + 3, s.c_str(), TEXT, SCREEN_W - 6);
+    text(3, BOTTOM + 3, jobStatus, TEXT, SCREEN_W - 6);
   } else if (hal::millis() < toastUntil) {
     text(3, BOTTOM + 3, toastText.c_str(), toastBad ? BAD : GOOD, SCREEN_W - 6);
   } else {
@@ -172,6 +173,9 @@ static void drawBand() {
 }
 
 static void drawFrame() {
+  if (jobs::running) {  // (once a frame, not once a band)
+    snprintf(jobStatus, sizeof jobStatus, "%s", jobs::status().c_str());
+  }
   for (bandY = 0; bandY < SCREEN_H; bandY += BAND) {
     drawBand();
     // (the display named here: a global M5Canvas is made before M5Cardputer is)

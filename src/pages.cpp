@@ -89,7 +89,7 @@ Page* ui::homePage() {
 struct FirmwarePage : Page {
   Firmware f;
   bool fromHub;
-  int scroll = 0;
+  int scroll = 0, maxScroll = 0;  // (in lines of 10: as far as the description's end, found as it's drawn)
   FirmwarePage(const Firmware& f, bool fromHub) : f(f), fromHub(fromHub) {}
   const char* title() override { return f.name.c_str(); }
   const char* hints() override {
@@ -101,7 +101,7 @@ struct FirmwarePage : Page {
   void key(const Key& k) override {
     if (k.up && scroll > 0) {
       scroll--;
-    } else if (k.down) {
+    } else if (k.down && scroll < maxScroll) {
       scroll++;
     } else if (k.ch == 'd' && fromHub && !f.onSd) {
       if (!settings.ssid[0]) {
@@ -142,7 +142,8 @@ struct FirmwarePage : Page {
     y += 11;
     text(6, y, f.onSd ? ("SD: /fm1/" + f.file).c_str() : "Not on the SD card", f.onSd ? GOOD : WARN, SCREEN_W - 12);
     y += 13;
-    wrap(6, y, SCREEN_W - 12, f.what.c_str(), TEXT, 20);
+    int lines = wrap(6, y, SCREEN_W - 12, f.what.c_str(), TEXT, 20);
+    maxScroll = std::max(0, (y + scroll * 10 + lines * 10 - BOTTOM + 9) / 10);
   }
 };
 
