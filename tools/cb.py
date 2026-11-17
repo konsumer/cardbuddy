@@ -5,7 +5,7 @@
   cb.py [--port P] shot FILE.png             the screen, as a PNG
   cb.py [--port P] log [SECONDS] [--reset]   what it says (reset: from its start)
 """
-import glob, struct, sys, time, zlib
+import glob, struct, subprocess, sys, time, zlib
 
 import serial
 
@@ -44,21 +44,22 @@ def main():
     if cmd == 'log':
         reset = '--reset' in args
         secs = float(next((a for a in args[1:] if a[0].isdigit()), 10))
-        s = serial.Serial(p, 115200, timeout=0.2)
         if reset:
-            s.dtr = False
-            s.rts = True
-            time.sleep(0.1)
-            s.rts = False
-            s.close()
-            time.sleep(0.3)
-            s = serial.Serial(p, 115200, timeout=0.2)
+            # esptool's: into its boot ROM and out with a watchdog reset, so it starts its program (toggling the
+            # serial port's lines by hand can leave the S3 in download mode instead)
+            subprocess.run([sys.executable, '-m', 'esptool', '--port', p, '--before', 'default_reset', '--after',
+                            'watchdog_reset', 'read_mac'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         end = time.time() + secs
-        while time.time() < end:
-            b = s.read(4096)
-            if b:
-                sys.stdout.write(b.decode('utf-8', 'replace'))
-                sys.stdout.flush()
+        while time.time() < end:  # (the port comes and goes as it starts)
+            try:
+                s = serial.Serial(glob.glob('/dev/cu.usbmodem*')[0] if not glob.glob(p) else p, 115200, timeout=0.2)
+                while time.time() < end:
+                    b = s.read(4096)
+                    if b:
+                        sys.stdout.write(b.decode('utf-8', 'replace'))
+                        sys.stdout.flush()
+            except (serial.SerialException, IndexError, OSError):
+                time.sleep(0.05)
         return
     s = serial.Serial(p, 115200, timeout=5)
     s.reset_input_buffer()

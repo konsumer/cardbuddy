@@ -14,8 +14,12 @@
 #include "settings.h"
 #include "themes.h"
 
-// the whole screen, 4 bits a pixel: 16 KB of the internal RAM, where 16 bits would take 64 KB
+// The screen is drawn a band of BAND rows at a time, into one band's canvas (4 bits a pixel, the theme's palette: 1.8
+// KB), each pushed as it's done: the whole screen's would take 16 KB of the internal RAM, which TLS needs (no PSRAM).
+// Everything drawn is moved up by bandY, so what's outside the band falls off it
+#define BAND 15
 static M5Canvas canvas(&M5Cardputer.Display);
+static int bandY;
 static std::vector<ui::Page*> stack;
 static bool dirty = true;
 static std::string toastText;
@@ -45,7 +49,7 @@ void jobs::screenColors(uint32_t rgb[SCREEN_COLORS]) {
 
 // -------------------------------------------------------------------------------------------- drawing ---
 void ui::fill(int x, int y, int w, int h, uint8_t color) {
-  canvas.fillRect(x, y, w, h, color);
+  canvas.fillRect(x, y - bandY, w, h, color);
 }
 
 void ui::text(int x, int y, const char* s, uint8_t color, int maxW) {
@@ -56,21 +60,21 @@ void ui::text(int x, int y, const char* s, uint8_t color, int maxW) {
       t.pop_back();
     }
     t += "~";
-    canvas.drawString(t.c_str(), x, y);
+    canvas.drawString(t.c_str(), x, y - bandY);
     return;
   }
-  canvas.drawString(s, x, y);
+  canvas.drawString(s, x, y - bandY);
 }
 
 void ui::textRight(int x, int y, const char* s, uint8_t color) {
   canvas.setTextColor(color);
-  canvas.drawString(s, x - canvas.textWidth(s), y);
+  canvas.drawString(s, x - canvas.textWidth(s), y - bandY);
 }
 
 void ui::bar(int x, int y, int w, int h, uint32_t done, uint32_t total) {
-  canvas.fillRect(x, y, w, h, OFF);
+  fill(x, y, w, h, OFF);
   if (total) {
-    canvas.fillRect(x, y, (int)((uint64_t)w * std::min(done, total) / total), h, ACCENT);
+    fill(x, y, (int)((uint64_t)w * std::min(done, total) / total), h, ACCENT);
   }
 }
 
@@ -134,7 +138,8 @@ void ui::listRows(int count, int sel, int& scroll, int y0, int rows, void (*row)
   }
 }
 
-static void drawFrame() {
+// one band of the screen (from bandY) into the canvas
+static void drawBand() {
   using namespace ui;
   canvas.fillScreen(BG);
   Page* p = stack.back();
@@ -161,7 +166,15 @@ static void drawFrame() {
   } else {
     text(3, BOTTOM + 3, p->hints(), DIM, SCREEN_W - 6);
   }
-  canvas.pushSprite(&M5Cardputer.Display, 0, 0);  // (the display named here: a global M5Canvas is made before M5Cardputer is)
+}
+
+static void drawFrame() {
+  for (bandY = 0; bandY < SCREEN_H; bandY += BAND) {
+    drawBand();
+    // (the display named here: a global M5Canvas is made before M5Cardputer is)
+    canvas.pushSprite(&M5Cardputer.Display, 0, bandY);
+  }
+  bandY = 0;
 }
 
 // ------------------------------------------------------------------------------------------- the pages ---
@@ -284,12 +297,16 @@ void ui::inject(const Key& k) {
 
 void ui::shot(void (*row)(const uint16_t* px, int n)) {
   std::vector<uint16_t> line(SCREEN_W);
-  for (int y = 0; y < SCREEN_H; y++) {
-    for (int x = 0; x < SCREEN_W; x++) {
-      line[x] = canvas.readPixel(x, y);
+  for (bandY = 0; bandY < SCREEN_H; bandY += BAND) {
+    drawBand();
+    for (int y = 0; y < BAND && bandY + y < SCREEN_H; y++) {
+      for (int x = 0; x < SCREEN_W; x++) {
+        line[x] = canvas.readPixel(x, y);
+      }
+      row(line.data(), SCREEN_W);
     }
-    row(line.data(), SCREEN_W);
   }
+  bandY = 0;
 }
 
 static bool readKey(ui::Key& k) {
@@ -340,7 +357,7 @@ void ui::begin() {
   catalog::keepHub = false;  // (the Hub's list, ~100 KB, stays on the SD card: read as it's needed)
   settingsLoad();
   canvas.setColorDepth(4);
-  canvas.createSprite(SCREEN_W, SCREEN_H);
+  canvas.createSprite(SCREEN_W, BAND);
   canvas.createPalette();
   canvas.setFont(&fonts::Font0);
   canvas.setTextSize(1);
