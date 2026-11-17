@@ -275,7 +275,28 @@ static void watch() {
 }
 
 // ------------------------------------------------------------------------------------------ the keyboard ---
+static std::vector<ui::Key> injected;
+
+void ui::inject(const Key& k) {
+  injected.push_back(k);
+}
+
+void ui::shot(void (*row)(const uint16_t* px, int n)) {
+  std::vector<uint16_t> line(SCREEN_W);
+  for (int y = 0; y < SCREEN_H; y++) {
+    for (int x = 0; x < SCREEN_W; x++) {
+      line[x] = canvas.readPixel(x, y);
+    }
+    row(line.data(), SCREEN_W);
+  }
+}
+
 static bool readKey(ui::Key& k) {
+  if (!injected.empty()) {
+    k = injected.front();
+    injected.erase(injected.begin());
+    return true;
+  }
   if (!M5Cardputer.Keyboard.isChange()) {
     return false;
   }

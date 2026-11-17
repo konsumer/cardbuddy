@@ -259,7 +259,7 @@ Page* ui::firmwarePage(bool hub) {
 // ------------------------------------------------------------------------------------------- text entry ---
 struct TextPage : Page {
   const char* t;
-  const char* prompt;
+  std::string prompt;  // (a copy: it's often made on the spot)
   bool secret, shown = false;
   std::string s;
   void (*done)(const std::string&, void*);
@@ -267,7 +267,7 @@ struct TextPage : Page {
   TextPage(const char* t, const char* prompt, bool secret, void (*done)(const std::string&, void*), void* arg)
       : t(t), prompt(prompt), secret(secret), done(done), arg(arg) {}
   const char* title() override { return t; }
-  const char* hints() override { return secret ? "enter ok  tab show  fn+esc back" : "enter ok  fn+esc back"; }
+  const char* hints() override { return "enter ok  fn+esc back"; }
   bool typing() override { return true; }
   void key(const Key& k) override {
     if (k.enter) {
@@ -285,10 +285,13 @@ struct TextPage : Page {
     }
   }
   void draw() override {
-    wrap(6, TOP + 6, SCREEN_W - 12, prompt, DIM, 3);
+    wrap(6, TOP + 6, SCREEN_W - 12, prompt.c_str(), DIM, 3);
     fill(4, TOP + 40, SCREEN_W - 8, 16, PANEL);
     std::string v = secret && !shown ? std::string(s.size(), '*') : s;
     text(8, TOP + 44, (v + "_").c_str(), TEXT, SCREEN_W - 16);
+    if (secret) {
+      text(6, TOP + 62, shown ? "tab: hide password" : "tab: show password", DIM);
+    }
   }
 };
 

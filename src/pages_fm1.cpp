@@ -673,8 +673,8 @@ struct KeysPage : Page {
   int octave = 4, channel = 0;
   bool down[128] = {};
   const char* title() override { return "Keys"; }
-  const char* hints() override { return "- = octave  [ ] channel  fn+esc back"; }
-  bool typing() override { return true; }  // (every key is a note: fn for the arrows, and back)
+  const char* hints() override { return "- = octave  [ ] channel  esc back"; }
+  bool typing() override { return false; }  // (esc goes back; the notes come from held(), every key as it is)
   bool raw() override { return true; }
   KeysPage() {
     midi::route(true);
