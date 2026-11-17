@@ -1,0 +1,376 @@
+:root {
+  --bg: #f7f6f3;
+  --panel: #ffffff;
+  --fg: #1d1d1f;
+  --dim: #5f6368;
+  --line: #e2e0da;
+  --accent: #b84a1e;
+  --accent-fg: #ffffff;
+  --code: #efede7;
+  --bad: #c92a2a;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #141416;
+    --panel: #1d1d20;
+    --fg: #ececec;
+    --dim: #a0a0a8;
+    --line: #2e2e33;
+    --accent: #ff8a5c;
+    --accent-fg: #141416;
+    --code: #2a2a2f;
+    --bad: #ff6b6b;
+    color-scheme: dark;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font:
+    16px/1.55 system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+}
+
+.wrap {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+a {
+  color: var(--accent);
+}
+
+header {
+  padding: 40px 0 24px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 2.2rem;
+  letter-spacing: -0.02em;
+}
+
+h2 {
+  margin: 24px 0 8px;
+  font-size: 1.1rem;
+}
+
+.lede {
+  margin: 8px 0 0;
+  font-size: 1.1rem;
+  color: var(--dim);
+}
+
+.oss {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 16px 0 0;
+}
+
+.oss a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--fg);
+  color: var(--bg);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.oss a:hover {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+.oss span {
+  color: var(--dim);
+  font-size: 0.9rem;
+}
+
+.release:empty {
+  display: none;
+}
+
+.release {
+  display: inline-block;
+  margin: 16px 0 0;
+  padding: 4px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 0.9rem;
+  color: var(--dim);
+}
+
+.video {
+  margin: 20px 0 0;
+  aspect-ratio: 16 / 9;
+}
+
+.video iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 8px;
+}
+
+.panel {
+  margin: 20px 0;
+  padding: 4px 24px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+}
+
+.button {
+  display: inline-block;
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--accent-fg);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.button.small {
+  padding: 5px 12px;
+  font-size: 0.9rem;
+}
+
+.button.secondary {
+  background: none;
+  color: var(--accent);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+}
+
+.dim {
+  color: var(--dim);
+  font-size: 0.9rem;
+}
+
+.bad {
+  color: var(--bad);
+}
+
+.note {
+  padding: 10px 14px;
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+  background: var(--code);
+}
+
+.good {
+  color: #2b8a3e;
+}
+
+code {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--code);
+  font-size: 0.9em;
+}
+
+pre {
+  overflow-x: auto;
+  max-height: 400px;
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--code);
+  font-size: 0.8rem;
+}
+
+pre:empty {
+  display: none;
+}
+
+table {
+  width: 100%;
+  margin: 8px 0;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 6px 12px 6px 0;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+td:last-child {
+  width: 1%;
+  text-align: right;
+  overflow-wrap: normal;
+  white-space: nowrap;
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--line);
+}
+
+.tabs a {
+  padding: 8px 14px;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  color: var(--dim);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.tabs a.on {
+  border-color: var(--accent);
+  color: var(--fg);
+}
+
+details {
+  margin: 20px 0 0;
+}
+
+summary {
+  cursor: pointer;
+  color: var(--dim);
+}
+
+.icon {
+  display: inline-flex;
+  padding: 6px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--dim);
+  cursor: pointer;
+}
+
+.icon:hover {
+  background: var(--code);
+  color: var(--bad);
+}
+
+.icon:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+select {
+  flex: 1 1 260px;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--fg);
+  font: inherit;
+}
+
+h2 a {
+  color: inherit;
+}
+
+/* the case: the view above the controls (one column: at this page's width a second column wouldn't fit, and a sticky
+   view would sit on top of it) */
+.case {
+  margin: 16px 0;
+}
+
+.case-view {
+  max-width: min(420px, 100%);
+  margin: 0 auto 16px;
+}
+
+.case-view canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  touch-action: none;
+  cursor: grab;
+}
+
+.case-view canvas[hidden] {
+  display: none;
+}
+
+.case .actions .button {
+  margin: 0 6px 6px 0;
+}
+
+.maker-switch {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 10px 0;
+}
+
+.maker-switch input {
+  width: 1.1em;
+  height: 1.1em;
+  accent-color: var(--accent);
+}
+
+.case select {
+  max-width: 100%;
+}
+
+/* a battery's own size, when it isn't one of the list's */
+.maker-custom {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.maker-custom input {
+  width: 6em;
+  margin-left: 6px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--fg);
+  font: inherit;
+}
+
+.maker-custom .note {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+.maker-custom[hidden],
+.maker-switch[hidden],
+.maker-download[hidden] {
+  display: none;
+}

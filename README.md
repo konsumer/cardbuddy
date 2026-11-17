@@ -15,6 +15,8 @@ It runs fm1buddy's own core (`lib/fm1core` there), so it does the same things th
 | `/midimap.txt` | MIDI mapping rules                                                        |
 | `/fm1buddy`    | the Hub's list, install records, logs (`cardbuddy-log.txt` is this one's) |
 
+**Install it from your browser: [konsumer.js.org/cardbuddy](https://konsumer.js.org/cardbuddy/)** (or put `cardbuddy.bin` from the releases on the SD card, for M5 Launcher).
+
 ## What it does
 
 All of it through fm1buddy's own code (`lib/fm1core`, and `lib/fm1s3` for the ESP32-S3's USB host, Bluetooth and Wi-Fi):

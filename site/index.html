@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>cardbuddy</title>
+    <meta name="description" content="Swap, back up and recover the M-VAVE FM-1's firmware, and manage its sounds, samples and songs, from an M5 Cardputer." />
+    <link rel="stylesheet" href="style.css?v=1" />
+    <script type="module" src="https://unpkg.com/esp-web-tools@10.4.0/dist/web/install-button.js?module"></script>
+  </head>
+  <body>
+    <header>
+      <div class="wrap">
+        <h1>cardbuddy</h1>
+        <p class="lede">Swap, back up and recover the M-VAVE FM-1's firmware, and manage its sounds, samples and songs, from an M5 Cardputer: a keyboard instead of a touchscreen.</p>
+        <p class="oss">
+          <a href="https://github.com/konsumer/cardbuddy"
+            ><svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" /></svg> Open source on GitHub</a
+          ><span>Free, GPL-3.0: read it, change it, build it yourself.</span>
+        </p>
+        <p>The Cardputer sibling of <a href="https://konsumer.js.org/fm1buddy/">fm1buddy</a> and <a href="https://konsumer.js.org/lilfm1buddy/">lilfm1buddy</a>. Same SD card as fm1buddy: move it between them and both see the same firmwares, backups and sounds.</p>
+        <p id="release" class="release"></p>
+      </div>
+    </header>
+
+    <nav class="tabs wrap" aria-label="pages">
+      <a href="#" data-tab="install">Install</a>
+      <a href="#launcher" data-tab="launcher">M5 Launcher</a>
+      <a href="#use" data-tab="use">Use it</a>
+    </nav>
+
+    <main class="wrap">
+      <div data-page="install">
+        <section class="panel">
+          <h2>You need</h2>
+          <ul>
+            <li>
+              <strong>An <a href="https://docs.m5stack.com/en/core/Cardputer-Adv">M5 Cardputer</a></strong> (the ADV, or the original), and a microSD card in it (FAT32).
+            </li>
+            <li><strong>A powered USB hub</strong> (or a USB-C OTG adapter with a charging port), for the FM-1 and your MIDI controllers. For recovering an FM-1 that won't start, a USB-C cable straight to it.</li>
+            <li>Chrome or Edge on a computer, and a USB-C cable that carries data</li>
+          </ul>
+          <p class="note"><strong>Using M5 Launcher?</strong> You don't need to install it this way: cardbuddy is an app like any other there, and Launcher stays on the Cardputer. See the <a href="#launcher" data-tab="launcher">M5 Launcher</a> tab.</p>
+
+          <h2>1. Download mode</h2>
+          <ol>
+            <li>Switch the Cardputer off (the switch on its side).</li>
+            <li>Plug it into this computer with the USB-C cable.</li>
+            <li><strong>Hold its G0 button</strong>, switch it on, then let go. The screen stays dark: that's download mode.</li>
+          </ol>
+
+          <h2>2. Install</h2>
+          <p>Press Install, and pick the Cardputer's port (<em>USB JTAG/serial debug unit</em>, or similar). Let it erase the first time.</p>
+          <p class="bad"><strong>This replaces what's on the Cardputer's flash</strong>, M5 Launcher too. The SD card isn't touched.</p>
+          <esp-web-install-button id="install" hidden>
+            <button slot="activate" class="button">Install cardbuddy</button>
+            <span slot="unsupported">Your browser can't: use Chrome or Edge on a computer.</span>
+            <span slot="not-allowed">This page has to be opened over https.</span>
+          </esp-web-install-button>
+          <p id="nofw" class="bad" hidden>No build yet: the page has no firmware next to it.</p>
+
+          <h2>3. Start it</h2>
+          <p>When it's done, switch the Cardputer off and on again (or press its reset button). cardbuddy starts, and makes its folders on the SD card the first time.</p>
+
+          <h2>4. Firmwares</h2>
+          <p>Two ways to get them:</p>
+          <ul>
+            <li><strong>From the Hub</strong>, over Wi-Fi: set it up in <em>Settings &gt; Wi-Fi</em>, then <em>Firmware: Hub</em> has every FM-1 firmware on <a href="https://mutant.cloud">mutant.cloud</a>.</li>
+            <li><strong>From your computer</strong>: put <code>.fwsc</code> files in <code>/fm1</code> on the SD card. <em>USB disk</em> on the Cardputer makes the card a drive on your computer (it comes back by itself when you eject it), or use a card reader.</li>
+          </ul>
+          <p><a href="#use" class="button" data-tab="use">How to use it</a></p>
+        </section>
+      </div>
+
+      <div data-page="launcher" hidden>
+        <section class="panel">
+          <p><a href="https://bmorcelli.github.io/Launcher/">M5 Launcher</a> keeps several apps on the Cardputer and starts the one you pick. cardbuddy is one of them: the Cardputer can run other things when you don't need it.</p>
+          <h2>From the SD card</h2>
+          <ol>
+            <li>Get <code>cardbuddy.bin</code>: <a id="appbin" href="https://github.com/konsumer/cardbuddy/releases/latest/download/cardbuddy.bin">the latest release</a>.</li>
+            <li>Copy it onto the Cardputer's SD card (anywhere: the card's top level is fine).</li>
+            <li>In Launcher: <em>SD</em>, pick <code>cardbuddy.bin</code>, then <em>Install</em>. Launcher starts it.</li>
+          </ol>
+          <p class="note">Launcher shows its own screen for a moment each time the Cardputer starts: press a key then to get back to it, and pick something else.</p>
+        </section>
+      </div>
+
+      <div data-page="use" hidden>
+        <section class="panel">
+          <h2>Getting around</h2>
+          <table>
+            <tbody>
+              <tr>
+                <td>move</td>
+                <td><code>;</code> <code>.</code> <code>,</code> <code>/</code> (the arrows on the keys)</td>
+              </tr>
+              <tr>
+                <td>open, pick</td>
+                <td><code>enter</code></td>
+              </tr>
+              <tr>
+                <td>back</td>
+                <td><code>esc</code> (<code>fn</code> + these while typing)</td>
+              </tr>
+              <tr>
+                <td>find a firmware</td>
+                <td>just type, in a firmware list</td>
+              </tr>
+              <tr>
+                <td>SD card's list / the Hub's</td>
+                <td><code>tab</code></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h2>Install a firmware</h2>
+          <ol>
+            <li>Plug a powered USB hub into the Cardputer's USB-C port, and the FM-1 (switched on) into the hub.</li>
+            <li>On the Cardputer: <em>Firmware: SD card</em> (or <em>Firmware: Hub</em>), pick one, <code>enter</code>.</li>
+            <li>cardbuddy sends the FM-1 into its boot loader and writes it. If it asks, switch the FM-1 off, then on.</li>
+            <li>The FM-1 restarts with its new firmware.</li>
+          </ol>
+
+          <h2>Back up and recover</h2>
+          <ol>
+            <li><em>Backup &amp; recover</em> saves the FM-1's whole flash to <code>/backups</code>. Do this first, before trying firmwares.</li>
+            <li>An FM-1 that won't start: plug it <strong>straight into the Cardputer</strong> (no hub), pick a firmware or a backup to bring it back with, and switch the FM-1 on when cardbuddy says. The flash map is drawn on both screens as it goes.</li>
+          </ol>
+
+          <h2>Everything else</h2>
+          <ul>
+            <li><strong>Sounds</strong>: send <code>.syx</code> banks, save the stock firmware's voice, keep and load fomajam's songs and kits, SLOOP backups, projects, songs and samples (<code>.wav</code>).</li>
+            <li><strong>MIDI</strong>: the devices on the hub, routing between them (<code>r</code>, with <code>/midimap.txt</code>: make one on <a href="https://konsumer.js.org/fm1buddy/#midimap">fm1buddy's MIDI map page</a>), Bluetooth MIDI (<code>b</code>).</li>
+            <li><strong>Keys</strong>: the keyboard as a MIDI controller, two octaves laid out as in trackers (<code>z s x d c v</code>… and <code>q 2 w 3 e r</code>…), <code>-</code> <code>=</code> octave, <code>[</code> <code>]</code> channel.</li>
+            <li><strong>USB disk</strong>: the SD card as a drive on a computer.</li>
+            <li><strong>Settings</strong>: Wi-Fi, theme, brightness, Bluetooth MIDI, USB MIDI on a computer.</li>
+          </ul>
+
+          <h2>The SD card</h2>
+          <table>
+            <tbody>
+              <tr>
+                <td><code>/fm1</code></td>
+                <td>firmwares (<code>.fwsc</code>)</td>
+              </tr>
+              <tr>
+                <td><code>/backups</code></td>
+                <td>the FM-1's whole flash</td>
+              </tr>
+              <tr>
+                <td><code>/syx</code></td>
+                <td>sounds (<code>.syx</code>, DX7 banks)</td>
+              </tr>
+              <tr>
+                <td><code>/setups</code></td>
+                <td>setups, fomajam's kits</td>
+              </tr>
+              <tr>
+                <td><code>/sloop</code></td>
+                <td>SLOOP backups, <code>songs/</code>, <code>samples/</code></td>
+              </tr>
+              <tr>
+                <td><code>/recordings</code></td>
+                <td>WAV recordings</td>
+              </tr>
+              <tr>
+                <td><code>/midimap.txt</code></td>
+                <td>MIDI routing</td>
+              </tr>
+              <tr>
+                <td><code>/fm1buddy</code></td>
+                <td>the Hub's list, logs (<code>cardbuddy-log.txt</code>)</td>
+              </tr>
+            </tbody>
+          </table>
+          <p>Nothing is written to the FM-1 until you pick something, and its boot loader is in its ROM: nothing here can make it unrecoverable.</p>
+          <p>How it works, and the code: <a href="https://github.com/konsumer/cardbuddy">cardbuddy</a>. Its bigger sibling, with a touch screen: <a href="https://konsumer.js.org/fm1buddy/">fm1buddy</a>.</p>
+        </section>
+      </div>
+    </main>
+    <script type="module" src="app.js?v=1"></script>
+  </body>
+</html>
