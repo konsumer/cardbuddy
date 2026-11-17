@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "catalog.h"
+#include "fm1.h"
 #include "hal.h"
 #include "jobs.h"
 #include "midi.h"
@@ -204,17 +205,28 @@ struct FirmwaresPage : Page {
     }
     return true;
   }
-  static bool matches(const FwList& l, const FwItem& it, const std::string& q) {
+  char device[24] = "";  // the model on the hub ("FM-1", "SMK-37 Elite"): only its firmwares are shown. "": all
+  static bool matches(const FwList& l, const FwItem& it, const std::string& q, const char* device) {
+    const char* product = l.str(it.product);
+    if (device[0] && product[0] && !sameHardware(device, product)) {
+      return false;  // (another device's: an SMK-37's with an FM-1 on the hub, or the other way round)
+    }
     return has(l.str(it.name), q) || has(l.str(it.author), q) || has(l.str(it.file), q);
+  }
+  // what's on the hub now ("" if none)
+  static void deviceNow(char out[24]) {
+    const Fm1Id* id = fm1::known(fm1::current());
+    snprintf(out, 24, "%s", id ? id->model : "");
   }
   void filter() {
     rows.clear();
     shown.clear();
     closeHub();  // (it may be a new list)
+    deviceNow(device);
     if (hub) {
       catalog::eachHub([](const FwList& one, void* arg) {
         FirmwaresPage* p = (FirmwaresPage*)arg;
-        if (matches(one, one[0], p->q)) {
+        if (matches(one, one[0], p->q, p->device)) {
           p->rows.push_back(one[0].line);
         }
         return true;
@@ -222,7 +234,7 @@ struct FirmwaresPage : Page {
                        this);
     } else {
       for (size_t i = 0; i < catalog::sd.size(); i++) {
-        if (matches(catalog::sd, catalog::sd[i], q)) {
+        if (matches(catalog::sd, catalog::sd[i], q, device)) {
           rows.push_back(i);
         }
       }
@@ -256,7 +268,9 @@ struct FirmwaresPage : Page {
     return shown[shown.size() - std::min<int>(12, rows.size() - i)].second;
   }
   void tick() override {
-    if (seen != FwList::changes || seenSize != catalog::sd.size()) {
+    char now[24];
+    deviceNow(now);
+    if (seen != FwList::changes || seenSize != catalog::sd.size() || strcmp(now, device)) {
       filter();
       redraw();
     }
@@ -322,10 +336,12 @@ struct FirmwaresPage : Page {
       y0 += 11;
     }
     if (rows.empty()) {
-      const char* why = !hal::sd()   ? "No SD card."
-                        : !q.empty() ? "Nothing has that in it."
-                        : hub        ? "No Hub list yet: u to get it (Wi-Fi)."
-                                     : "No .fwsc files in /fm1. tab: the Hub's.";
+      const char* why = !hal::sd()                           ? "No SD card."
+                        : !q.empty()                         ? "Nothing has that in it."
+                        : hub && catalog::hubUpdated.empty() ? "No Hub list yet: u to get it (Wi-Fi)."
+                        : device[0]                          ? "None for the device on the hub."
+                        : hub                                ? "No Hub list yet: u to get it (Wi-Fi)."
+                                                             : "No .fwsc files in /fm1. tab: the Hub's.";
       text(6, y0 + 4, why, DIM, SCREEN_W - 12);
       return;
     }
