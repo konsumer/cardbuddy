@@ -165,37 +165,13 @@ static void ask(const std::string& t, const std::string& q, std::function<void()
   push(new AskPage(t, q, yes));
 }
 
-static bool hasBackup() {
-  std::string dir = catalog::path(BACKUPS_DIR);
-  DIR* d = dir.empty() ? 0 : opendir(dir.c_str());
-  bool any = false;
-  while (dirent* e = d ? readdir(d) : 0) {
-    size_t n = strlen(e->d_name);
-    any |= n > 4 && !strcasecmp(e->d_name + n - 4, ".bin");
-  }
-  if (d) {
-    closedir(d);
-  }
-  return any;
-}
-
 // install f on the FM-1 (the firmware page's i)
 void ui::install(const Firmware& f) {
-  const Fm1Id* id = fm1::known(fm1::current());
-  if (!id) {
+  if (!fm1::known(fm1::current())) {
     toast("No FM-1 on the USB-C port.", true);
-    return;
+  } else if (!jobs::install(f)) {
+    busy();
   }
-  std::string q = "Install " + f.name + " " + f.version + " on the " + fm1::machineName() + " (" + id->text + ")?";
-  if (!hasBackup()) {
-    q += " There's no backup of it on the SD card yet (Backup & recover).";
-  }
-  Firmware copy = f;
-  ask("Install", q, [copy]() {
-    if (!jobs::install(copy)) {
-      busy();
-    }
-  });
 }
 
 // --------------------------------------------------------------------------------- backup & recover ---

@@ -19,7 +19,7 @@ It runs fm1buddy's own core (`lib/fm1core` there), so it does the same things th
 
 All of it through fm1buddy's own code (`lib/fm1core`, and `lib/fm1s3` for the ESP32-S3's USB host, Bluetooth and Wi-Fi):
 
-- **Firmware**: the SD card's `.fwsc` files and the Hub's ([mutant.cloud](https://mutant.cloud/)), with search. Download from the Hub over Wi-Fi, install on the FM-1 (`i`), with a warning when there's no backup yet
+- **Firmware**: the SD card's `.fwsc` files and the Hub's ([mutant.cloud](https://mutant.cloud/)), with search. Download from the Hub over Wi-Fi, install on the FM-1 (`enter` on a firmware)
 - **Backup & recover**: all of the FM-1's flash to `/backups`, and an FM-1 that won't start brought back from a firmware or a backup (recovery mode: the FM-1 straight on the USB-C port, the flash map drawn as it goes, on both screens)
 - **Sounds**: send `.syx` files, save the stock firmware's voice, keep and load fomajam's song and kits (setups), export them
 - **SLOOP**: back it up, restore a backup or one project of it (`0`, `a`-`d`), save and load songs, load `.wav` files into a sample slot (`1`-`4`)

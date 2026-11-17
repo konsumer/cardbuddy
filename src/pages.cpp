@@ -93,9 +93,9 @@ struct FirmwarePage : Page {
   const char* title() override { return f.name.c_str(); }
   const char* hints() override {
     if (fromHub && !f.onSd) {
-      return "d download  i install  esc back";
+      return "enter install  d download";
     }
-    return "i install  esc back";
+    return "enter install";
   }
   void key(const Key& k) override {
     if (k.up && scroll > 0) {
@@ -108,7 +108,7 @@ struct FirmwarePage : Page {
       } else if (!jobs::download(f)) {
         toast("Busy with something else.", true);
       }
-    } else if (k.ch == 'i') {
+    } else if (k.ch == 'i' || k.enter) {
       install(f);
     }
   }
