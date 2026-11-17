@@ -41,10 +41,10 @@ struct Item {
 static const Item HOME[] = {
     {"Firmware: SD card", "Install what's in /fm1", []() { return firmwarePage(false); }},
     {"Firmware: Hub", "mutant.cloud's firmwares", []() { return firmwarePage(true); }},
-    {"Backup & recover", "The FM-1's whole flash", []() { return soonPage("Backup & recover", "Backing up the FM-1's flash, and writing a firmware or backup to one that won't start, need the USB host."); }},
-    {"Sounds", ".syx banks, setups", []() { return soonPage("Sounds", "Sending and saving sounds (.syx, setups, fomajam's kits) needs the USB host."); }},
-    {"SLOOP", "Backups, songs, samples", []() { return soonPage("SLOOP", "SLOOP's backups, songs and sample slots need the USB host."); }},
-    {"MIDI", "Routing, keys, clock", []() { return soonPage("MIDI", "MIDI routing, the keyboard as a piano, tilt as CCs, and the clock need the USB host."); }},
+    {"Backup & recover", "The FM-1's whole flash", []() { return backupPage(); }},
+    {"Sounds", ".syx, setups, SLOOP", []() { return soundsPage(); }},
+    {"MIDI", "Devices, routing", []() { return midiPage(); }},
+    {"Keys", "Play it from here", []() { return keysPage(); }},
     {"Wi-Fi", "For the Hub", []() { return wifiPage(); }},
     {"Settings", "Theme, brightness", []() { return settingsPage(); }},
     {"About", "Version, SD card, battery", []() { return aboutPage(); }},
@@ -101,13 +101,21 @@ struct FirmwarePage : Page {
         toast("Busy with something else.", true);
       }
     } else if (k.ch == 'i') {
-      toast("Installing needs the USB host: not yet.", true);
+      install(f);
     }
   }
   void jobDone() override {
     if (jobs::kind == jobs::DOWNLOAD && jobs::ok) {
       f.onSd = true;
       toast("On the SD card: " + jobs::saved);
+    } else if (jobs::kind == jobs::INSTALL && jobs::ok) {
+      f.onSd = true;
+      toast("Installed.");
+    }
+  }
+  void tick() override {
+    if (jobs::running && (jobs::kind == jobs::INSTALL || jobs::kind == jobs::DOWNLOAD)) {
+      redraw();
     }
   }
   void draw() override {
@@ -361,33 +369,49 @@ Page* ui::wifiPage() {
 // ----------------------------------------------------------------------------------------------- settings ---
 struct SettingsPage : Page {
   int sel = 0;
+  static const int N = 6;
   const char* title() override { return "Settings"; }
-  const char* hints() override { return "; . move  , / change  ` back"; }
+  const char* hints() override { return "; . move  , / enter change  ` back"; }
   void key(const Key& k) override {
     if (k.up) {
-      sel = (sel + 2) % 3;
+      sel = (sel + N - 1) % N;
     } else if (k.down) {
-      sel = (sel + 1) % 3;
+      sel = (sel + 1) % N;
     } else if (k.left || k.right || k.enter) {
       int d = k.left ? -1 : 1;
       if (sel == 0) {
         settings.theme = (settings.theme + THEME_COUNT + d) % THEME_COUNT;
       } else if (sel == 1) {
         settings.brightness = std::max(10, std::min(100, settings.brightness + d * 10));
-      } else {
+      } else if (sel == 2) {
         settings.hubAuto = !settings.hubAuto;
+      } else if (sel == 3) {
+        hal::bleOn(!hal::bleIsOn());
+        bool on = hal::bleIsOn();
+        hal::save("bluetooth", &on, 1);
+      } else if (sel == 4) {
+        hal::computerMidiSet(!hal::computerMidi());  // (it restarts, if a computer is on the port)
+      } else if (sel == 5 && k.enter) {
+        if (!hal::sd() || jobs::running) {
+          toast(hal::sd() ? "Busy with something else." : "No SD card.", true);
+        } else {
+          hal::diskModeSet(true);  // (it restarts as a USB disk)
+        }
       }
       settingsSave();
       applyTheme();
     }
   }
   void draw() override {
-    char b[3][24];
+    char b[N][24];
     snprintf(b[0], 24, "%s", THEMES[settings.theme % THEME_COUNT].name);
     snprintf(b[1], 24, "%d%%", settings.brightness);
     snprintf(b[2], 24, "%s", settings.hubAuto ? "on" : "off");
-    const char* names[3] = {"Theme", "Brightness", "Update the Hub list"};
-    for (int i = 0; i < 3; i++) {
+    snprintf(b[3], 24, "%s", hal::bleIsOn() ? "on" : "off");
+    snprintf(b[4], 24, "%s", hal::computerMidi() ? "USB MIDI" : "serial");
+    snprintf(b[5], 24, "enter");
+    const char* names[N] = {"Theme", "Brightness", "Update the Hub list", "Bluetooth MIDI", "On a computer", "USB disk (SD card)"};
+    for (int i = 0; i < N; i++) {
       int y = TOP + 2 + i * ROW;
       if (i == sel) {
         fill(0, y, SCREEN_W, ROW, OFF);
@@ -397,7 +421,7 @@ struct SettingsPage : Page {
       textRight(SCREEN_W - 6, y + 2, b[i], i == sel ? ACCENT : DIM);
     }
     for (int i = 0; i < 4; i++) {  // the theme's tag colors
-      fill(8 + i * 14, TOP + 46, 10, 10, BAD + i);
+      fill(8 + i * 14, TOP + 4 + N * ROW, 10, 10, BAD + i);
     }
   }
 };
@@ -450,22 +474,4 @@ struct AboutPage : Page {
 
 Page* ui::aboutPage() {
   return new AboutPage();
-}
-
-// ------------------------------------------------------------------------------------------- not yet ---
-struct SoonPage : Page {
-  const char* t;
-  const char* what;
-  SoonPage(const char* t, const char* what) : t(t), what(what) {}
-  const char* title() override { return t; }
-  const char* hints() override { return "` back"; }
-  void key(const Key&) override {}
-  void draw() override {
-    int n = wrap(6, TOP + 6, SCREEN_W - 12, what, TEXT, 5);
-    text(6, TOP + 12 + n * 10, "Coming: the FM-1 on the USB-C port.", DIM, SCREEN_W - 12);
-  }
-};
-
-Page* ui::soonPage(const char* title, const char* what) {
-  return new SoonPage(title, what);
 }

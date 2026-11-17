@@ -4,6 +4,9 @@
 #include <stdint.h>
 
 #include <string>
+#include <vector>
+
+struct Firmware;
 
 namespace ui {
 // a key, as the pages see it. The Cardputer's ; . , / are up, down, left, right where nothing is being typed (or with
@@ -36,6 +39,8 @@ struct Page {
   virtual void tick() {}                   // ten times a second
   virtual void jobDone() {}                // a job (jobs.h) finished, this page on screen
   virtual bool closing() { return true; }  // back: false keeps it open (it handled back itself)
+  virtual bool raw() { return false; }     // it wants held: the keys down now, on every change (presses and releases)
+  virtual void held(const std::vector<char>& keys) {}
 };
 
 #define TOP 14
@@ -67,5 +72,11 @@ Page* wifiPage();
 Page* settingsPage();
 Page* aboutPage();
 Page* textPage(const char* title, const char* prompt, bool secret, void (*done)(const std::string& s, void* arg), void* arg);
-Page* soonPage(const char* title, const char* what);
+Page* backupPage();
+Page* recoverPage();  // recovery mode (hal::recoveryMode)
+Page* diskPage();     // USB disk mode (hal::diskMode)
+Page* soundsPage();
+Page* midiPage();
+Page* keysPage();
+void install(const Firmware& f);  // asks, then installs it on the FM-1
 }  // namespace ui

@@ -6,8 +6,11 @@
 #include <vector>
 
 #include "catalog.h"
+#include "fm1.h"
 #include "hal.h"
 #include "jobs.h"
+#include "midi.h"
+#include "play.h"
 #include "settings.h"
 #include "themes.h"
 
@@ -140,7 +143,9 @@ static void drawFrame() {
   text(3, 3, p->title(), ACCENT, 130);
   char right[40];
   int level = M5Cardputer.Power.getBatteryLevel();
-  snprintf(right, sizeof right, "%s%d%%", hal::wifiOn() ? "wifi  " : "", level);
+  const Fm1Id* id = fm1::known(fm1::current());
+  snprintf(right, sizeof right, "%s%s%d%%", id ? (std::string(fm1::machineName()) + "  ").c_str() : "",
+           hal::wifiOn() ? "wifi  " : "", level);
   textRight(SCREEN_W - 3, 3, right, DIM);
   p->draw();
   // the bottom: a job, a toast, or the page's keys
@@ -260,15 +265,28 @@ static void watch() {
     stack.back()->jobDone();
     dirty = true;
   }
+  fm1::watch();
+  uint32_t fm1s = 0;  // the keys' notes leave the FM-1s' own alone (play.h)
+  for (int d = 0; d < MIDI_DEVS; d++) {
+    fm1s |= fm1::known(d) ? 1u << d : 0;
+  }
+  play::skip(fm1s);
   bootWatch();
 }
 
 // ------------------------------------------------------------------------------------------ the keyboard ---
 static bool readKey(ui::Key& k) {
-  if (!M5Cardputer.Keyboard.isChange() || !M5Cardputer.Keyboard.isPressed()) {
+  if (!M5Cardputer.Keyboard.isChange()) {
     return false;
   }
   auto s = M5Cardputer.Keyboard.keysState();
+  if (stack.back()->raw()) {  // (every change: what's held now)
+    std::vector<char> held(s.word.begin(), s.word.end());
+    stack.back()->held(s.fn ? std::vector<char>() : held);
+  }
+  if (!M5Cardputer.Keyboard.isPressed()) {
+    return false;
+  }
   k = {};
   k.enter = s.enter;
   k.del = s.del;
@@ -303,8 +321,29 @@ void ui::begin() {
   canvas.setTextDatum(top_left);
   applyTheme();
   push(homePage());
+  // as fm1buddy starts: Bluetooth MIDI and MIDI routing as they were left, the mapping's rules, and the keyboard as a
+  // controller that's always there
+  bool on = false;
+  if (!hal::recoveryMode() && hal::load("bluetooth", &on, 1) && on) {
+    hal::bleOn(true);
+  }
+  play::begin();
+  on = false;
+  hal::load("routing", &on, 1);
+  if (!hal::diskMode() && !hal::recoveryMode()) {
+    midi::loadMap();
+    midi::mount(MIDI_TOUCH, 0, 0, "Keys");
+  }
+  midi::route(on && !hal::diskMode() && !hal::recoveryMode());
+  if (hal::recoveryMode()) {
+    push(recoverPage());
+  } else if (hal::diskMode()) {
+    push(diskPage());
+  }
   drawFrame();
-  bootBegin();
+  if (!hal::diskMode()) {  // (the computer has the card then)
+    bootBegin();
+  }
 }
 
 void ui::loop() {
