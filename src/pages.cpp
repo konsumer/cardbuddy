@@ -168,10 +168,18 @@ struct FirmwaresPage : Page {
     uint8_t flags;
   };
   std::vector<std::pair<uint32_t, Shown>> shown;  // the Hub's rows read so far (only those near the screen)
+  FILE* hubFile = 0;                              // HUB_LIST, open while the page is (opening it is slow)
   uint32_t seen = 0xFFFFFFFF;
   size_t seenSize = 0;
   int sel = 0, scroll = 0;
   FirmwaresPage(bool hub) : hub(hub) {}
+  ~FirmwaresPage() { closeHub(); }
+  void closeHub() {
+    if (hubFile) {
+      fclose(hubFile);
+      hubFile = 0;
+    }
+  }
 
   const char* title() override { return hub ? "Firmware: Hub" : "Firmware: SD card"; }
   const char* hints() override {
@@ -191,6 +199,7 @@ struct FirmwaresPage : Page {
   void filter() {
     rows.clear();
     shown.clear();
+    closeHub();  // (it may be a new list)
     if (hub) {
       catalog::eachHub([](const FwList& one, void* arg) {
         FirmwaresPage* p = (FirmwaresPage*)arg;
@@ -211,23 +220,29 @@ struct FirmwaresPage : Page {
     seen = FwList::changes;
     seenSize = catalog::sd.size();
   }
-  // the Hub's row at line, read once
-  const Shown& hubRow(uint32_t line) {
+  // the Hub's row i: read with the screen's worth after it, the first time it's needed
+  const Shown& hubRow(int i) {
+    uint32_t line = rows[i];
     for (auto& s : shown) {
       if (s.first == line) {
         return s.second;
       }
     }
-    if (shown.size() > 40) {
+    if (shown.size() > 60) {
       shown.clear();
     }
-    FwList one;
-    Shown r{"?", "", "", 0};
-    if (catalog::hubAt(line, one)) {
-      r = {one.str(one[0].name), one.str(one[0].version), one.str(one[0].file), one[0].flags};
+    if (!hubFile) {
+      hubFile = catalog::openHub();
     }
-    shown.push_back({line, r});
-    return shown.back().second;
+    FwList one;
+    for (int k = i; k < (int)rows.size() && k < i + 12; k++) {
+      Shown r{"?", "", "", 0};
+      if (catalog::hubAt(hubFile, rows[k], one)) {
+        r = {one.str(one[0].name), one.str(one[0].version), one.str(one[0].file), one[0].flags};
+      }
+      shown.push_back({rows[k], r});
+    }
+    return shown[shown.size() - std::min<int>(12, rows.size() - i)].second;
   }
   void tick() override {
     if (seen != FwList::changes || seenSize != catalog::sd.size()) {
@@ -307,7 +322,7 @@ struct FirmwaresPage : Page {
       const char *name, *version;
       bool there, beta;
       if (p->hub) {
-        const Shown& r = p->hubRow(p->rows[i]);
+        const Shown& r = p->hubRow(i);
         name = r.name.c_str(), version = r.version.c_str();
         there = onSd(r.file.c_str()), beta = r.flags & FwItem::BETA;
       } else {

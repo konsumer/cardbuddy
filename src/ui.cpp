@@ -124,6 +124,9 @@ void ui::listRows(int count, int sel, int& scroll, int y0, int rows, void (*row)
   scroll = std::max(0, std::min(scroll, std::max(0, count - rows)));
   for (int i = scroll; i < count && i < scroll + rows; i++) {
     int y = y0 + (i - scroll) * ROW;
+    if (y + ROW <= bandY || y >= bandY + BAND) {
+      continue;  // (not in the band being drawn)
+    }
     if (i == sel) {
       fill(0, y, SCREEN_W - 3, ROW, OFF);
       fill(0, y, 2, ROW, ACCENT);
