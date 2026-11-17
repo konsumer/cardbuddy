@@ -553,6 +553,14 @@ Page* ui::settingsPage() {
 
 // -------------------------------------------------------------------------------------------------- about ---
 struct AboutPage : Page {
+  unsigned hubN = 0;  // (counted on the SD card: the Hub's list isn't kept in memory)
+  AboutPage() {
+    catalog::eachHub([](const FwList&, void* arg) {
+      (*(unsigned*)arg)++;
+      return true;
+    },
+                     &hubN);
+  }
   const char* title() override { return "About"; }
   const char* hints() override { return "esc back"; }
   void key(const Key&) override {}
@@ -579,7 +587,7 @@ struct AboutPage : Page {
     } else {
       line("SD: none", BAD);
     }
-    snprintf(l, sizeof l, "Firmwares: %u on SD, %u on the Hub", (unsigned)catalog::sd.size(), (unsigned)catalog::hub.size());
+    snprintf(l, sizeof l, "Firmwares: %u on SD, %u on the Hub", (unsigned)catalog::sd.size(), hubN);
     line(l, TEXT);
     if (!catalog::hubUpdated.empty()) {
       line(("Hub list: " + catalog::hubUpdated).c_str(), DIM);

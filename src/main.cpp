@@ -2,6 +2,7 @@
 #include <M5Cardputer.h>
 
 #include "board.h"
+#include "catalog.h"
 #include "hal.h"
 #include "ui.h"
 
@@ -66,6 +67,9 @@ void setup() {
   if (hal::recoveryMode()) {
     board::usbBegin();
   }
+  // no PSRAM: the Hub's list (~100 KB in memory) stays on the SD card, read as it's needed (pages.cpp). Kept, it ran
+  // out of memory after each download of it, and restarted
+  catalog::keepHub = false;
   ui::begin();
   hal::logRam("up");
   hal::log("screen: %dx%d, rotation %d", (int)M5Cardputer.Display.width(), (int)M5Cardputer.Display.height(),
