@@ -35,7 +35,7 @@ All of it through fm1buddy's own code (`lib/fm1core`, and `lib/fm1s3` for the ES
 - The arrows (`;` `.` `,` `/`, labelled on the keyboard) move, `enter` opens, `esc` goes back (`fn` + these while typing)
 - In a firmware list, just type to find one; `tab` switches between the SD card's and the Hub's
 - The FM-1 and controllers go on the USB-C port through a powered USB hub (or an OTG adapter with a charging port), as with fm1buddy. For recovery, the FM-1 goes straight on the port, and cardbuddy says when to switch it on
-- With a computer on the USB-C port at power-on, the port is its serial port (flashing, logs) instead
+- With a computer on the USB-C port at power-on, the port is its serial port (flashing, logs) instead. **Plugged into a computer while it's already on, it can't be programmed**: switch it off, plug it in, then switch it on (holding G0 for download mode)
 
 ## No PSRAM
 
