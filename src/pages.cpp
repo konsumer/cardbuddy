@@ -8,6 +8,7 @@
 #include "catalog.h"
 #include "hal.h"
 #include "jobs.h"
+#include "midi.h"
 #include "settings.h"
 #include "themes.h"
 #include "ui.h"
@@ -172,7 +173,16 @@ struct FirmwaresPage : Page {
   uint32_t seen = 0xFFFFFFFF;
   size_t seenSize = 0;
   int sel = 0, scroll = 0;
-  FirmwaresPage(bool hub) : hub(hub) {}
+  FirmwaresPage(bool hub) : hub(hub) { autoUpdate(); }
+  // Settings > Update the Hub list: the first time it's looked at after power-on, as fm1buddy does (not while
+  // Bluetooth MIDI runs: Wi-Fi would pause it)
+  void autoUpdate() {
+    static bool asked;
+    if (hub && settings.hubAuto && !asked && settings.ssid[0] && hal::sd() && !(midi::routing && hal::bleIsOn())) {
+      asked = true;
+      jobs::hubList(false);
+    }
+  }
   ~FirmwaresPage() { closeHub(); }
   void closeHub() {
     if (hubFile) {
@@ -279,6 +289,7 @@ struct FirmwaresPage : Page {
       hub = !hub;
       sel = scroll = 0;
       filter();
+      autoUpdate();
     } else if (k.del && !q.empty()) {
       q.pop_back();
       filter();
@@ -520,7 +531,7 @@ struct SettingsPage : Page {
     snprintf(b[HUB_AUTO], 34, "%s", settings.hubAuto ? "on" : "off");
     snprintf(b[BLUETOOTH], 34, "%s", hal::bleIsOn() ? "on" : "off");
     snprintf(b[COMPUTER], 34, "%s", hal::computerMidi() ? "USB MIDI" : "serial");
-    const char* names[N] = {"Wi-Fi", "Theme", "Brightness", "Update the Hub list", "Bluetooth MIDI", "On a computer"};
+    const char* names[N] = {"Wi-Fi", "Theme", "Brightness", "Hub list at power-on", "Bluetooth MIDI", "On a computer"};
     for (int i = 0; i < N; i++) {
       int y = TOP + 2 + i * ROW;
       if (i == sel) {
