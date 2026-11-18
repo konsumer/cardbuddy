@@ -184,11 +184,12 @@ static std::vector<Choice> choices() {
   std::vector<Choice> out;
   for (const FwItem& f : catalog::sd.items) {
     const char* product = catalog::sd.str(f.product);
-    if (!strncmp(product, "FM-1_", 5) || isSmk(product)) {
-      const char* v = catalog::sd.str(f.version);
-      out.push_back({std::string(FW_DIR "/") + catalog::sd.str(f.file), catalog::sd.str(f.name),
-                     f.flags & FwItem::STOCK ? "stock" : *v ? v
-                                                            : "firmware"});
+    bool smk = isSmk(product);  // (it says what it's for: recovery checks the flash it finds)
+    if (!strncmp(product, "FM-1_", 5) || smk) {
+      const char *v = catalog::sd.str(f.version), *file = catalog::sd.str(f.file), *name = catalog::sd.str(f.name);
+      std::string what = f.flags & FwItem::STOCK ? "stock" : *v ? v
+                                                                : "firmware";
+      out.push_back({std::string(FW_DIR "/") + file, *name ? name : file, smk ? what + ", SMK-37" : what});
     }
   }
   std::string dir = catalog::path(BACKUPS_DIR);
@@ -196,9 +197,22 @@ static std::vector<Choice> choices() {
   if (DIR* d = dir.empty() ? 0 : opendir(dir.c_str())) {
     while (dirent* e = readdir(d)) {
       size_t n = strlen(e->d_name);
-      if (n > 4 && !strcasecmp(e->d_name + n - 4, ".bin")) {
-        found.push_back({BACKUPS_DIR "/" + std::string(e->d_name), e->d_name, "backup"});
+      if (n <= 4 || strcasecmp(e->d_name + n - 4, ".bin")) {
+        continue;
       }
+      Choice c{BACKUPS_DIR "/" + std::string(e->d_name), e->d_name, "backup"};
+      // its .txt beside it says what it was taken from
+      if (FILE* f = fopen((dir + "/" + std::string(e->d_name, n - 4) + ".txt").c_str(), "r")) {
+        char line[96];
+        while (fgets(line, sizeof line, f)) {
+          if (!strncmp(line, "firmware ", 9)) {
+            line[strcspn(line, "\r\n")] = 0;
+            c.what = line + 9;
+          }
+        }
+        fclose(f);
+      }
+      found.push_back(c);
     }
     closedir(d);
   }
@@ -222,7 +236,15 @@ struct BackupPage : ListPage {
                             busy();
                           }
                         }});
-      for (const Choice& c : choices()) {
+      std::vector<Choice> cs = choices();
+      if (cs.empty()) {
+        p.rows.push_back({"Recover: nothing to put on it", hal::sd() ? "" : "no SD card", []() {
+                            toast(hal::sd() ? "Download a firmware (stock is on the Hub) or make a backup first."
+                                            : "No SD card.",
+                                  true);
+                          }});
+      }
+      for (const Choice& c : cs) {
         std::string path = c.path, name = c.name;
         p.rows.push_back({"Recover: " + c.name, c.what, [path, name]() {
                             ask("Recover", "Put " + name +
@@ -267,7 +289,12 @@ Page* ui::backupPage() {
 struct RecoverPage : Page {
   bool started = false;
   const char* title() override { return "Recovery"; }
+  // nothing's gone on it yet: it's still waiting for the FM-1 (it would wait for it forever)
+  bool waiting() { return jobs::running && (jobs::step == jobs::GETTING_READY || jobs::step == jobs::KEYING); }
   const char* hints() override {
+    if (waiting()) {
+      return "esc cancel";
+    }
     if (jobs::running) {
       return "leave it plugged in";
     }
@@ -276,6 +303,9 @@ struct RecoverPage : Page {
   }
   bool closing() override { return false; }
   void key(const Key& k) override {
+    if (waiting() && k.back) {
+      hal::recoveryModeSet(false);  // (it restarts as it was)
+    }
     if (jobs::running) {
       return;
     }
@@ -297,6 +327,11 @@ struct RecoverPage : Page {
   void draw() override {
     std::string from = jobs::recovering();
     std::string name = from.substr(from.rfind('/') + 1);
+    for (const FwItem& f : catalog::sd.items) {
+      if (name == catalog::sd.str(f.file) && *catalog::sd.str(f.name)) {
+        name = catalog::sd.str(f.name);
+      }
+    }
     int st = jobs::step;
     bool onFlash = st == jobs::READING_FLASH || st == jobs::SAVING || st == jobs::WRITING_FLASH ||
                    st == jobs::CHECKING_FLASH || st == jobs::LEAVING;
@@ -313,8 +348,7 @@ struct RecoverPage : Page {
     uint8_t c = TEXT;
     if (jobs::running) {
       s = jobs::status();
-      bool waiting = st == jobs::GETTING_READY || st == jobs::KEYING;
-      if (waiting && hal::keyState() < hal::KEY_ANSWERED) {
+      if (waiting() && hal::keyState() < hal::KEY_ANSWERED) {
         s += "\nSwitch the FM-1 off, plug it straight into the USB-C port (no hub), then switch it on.";
       }
     } else if (mine && jobs::ok) {
