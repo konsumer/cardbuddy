@@ -6,8 +6,8 @@ on:
   release:
     types: [published]
 
-# On main, the web page (site/) goes to GitHub Pages with the firmware next to it (site/fw/). Settings -> Pages ->
-# Source: GitHub Actions.
+# On main and on a release (from its tag, so the page's version and the firmware's are the release's), the web page
+# (site/) goes to GitHub Pages with the firmware next to it (site/fw/). Settings -> Pages -> Source: GitHub Actions.
 concurrency:
   group: build-${{ github.ref }}
   cancel-in-progress: true
@@ -33,9 +33,11 @@ jobs:
         with:
           python-version: '3.11'
       - run: pip install --upgrade platformio
+      # the same version as the page's manifest (tools/site.sh): the tag on a release
+      - run: echo "VERSION=$(git describe --tags --always)" >> "$GITHUB_ENV"
       - run: pio run
         env:
-          PLATFORMIO_BUILD_FLAGS: -D FM1BUDDY_VERSION='"${{ github.event.release.tag_name || github.sha }}"'
+          PLATFORMIO_BUILD_FLAGS: -D FM1BUDDY_VERSION='"${{ env.VERSION }}"'
       - run: mkdir -p dist && cp .pio/build/cardputer/firmware.bin dist/cardbuddy.bin
       - uses: actions/upload-artifact@v4
         with:
@@ -47,13 +49,13 @@ jobs:
           files: dist/cardbuddy.bin
       - name: the page, with the firmware
         run: tools/site.sh
-      - if: github.ref == 'refs/heads/main'
+      - if: github.ref == 'refs/heads/main' || github.event_name == 'release'
         uses: actions/upload-pages-artifact@v3
         with:
           path: site
 
   pages:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || github.event_name == 'release'
     needs: build
     runs-on: ubuntu-latest
     permissions:
