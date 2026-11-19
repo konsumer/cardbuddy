@@ -38,19 +38,16 @@ jobs:
       - run: pio run
         env:
           PLATFORMIO_BUILD_FLAGS: -D FM1BUDDY_VERSION='"${{ env.VERSION }}"'
-      # the app alone (M5 Launcher, from the SD card) and the merged image at 0x0 (M5 Burner, the web installer)
-      - run: |
-          mkdir -p dist
-          cp .pio/build/cardputer/firmware.bin dist/cardbuddy.bin
-          cp .pio/build/cardputer/firmware.factory.bin dist/cardbuddy-full.bin
+      # the merged image (boot loader, partitions, app) at 0x0: M5 Burner, M5 Launcher and the web installer all take it
+      - run: mkdir -p dist && cp .pio/build/cardputer/firmware.factory.bin dist/cardbuddy.bin
       - uses: actions/upload-artifact@v4
         with:
           name: cardbuddy
-          path: dist/*.bin
+          path: dist/cardbuddy.bin
       - if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*.bin
+          files: dist/cardbuddy.bin
       - name: the page, with the firmware
         run: tools/site.sh
       - if: github.ref == 'refs/heads/main' || github.event_name == 'release'

@@ -8,7 +8,7 @@
     "github": "https://github.com/konsumer/cardbuddy"
   },
   "files": {
-    "firmware": "./cardbuddy-full.bin",
+    "firmware": "./cardbuddy.bin",
     "cover": "./cardbuddy.png"
   }
 }
