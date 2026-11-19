@@ -15,7 +15,7 @@ It runs fm1buddy's own core (`lib/fm1core` there), so it does the same things th
 | `/midimap.txt` | MIDI mapping rules                                                        |
 | `/fm1buddy`    | the Hub's list, install records, logs (`cardbuddy-log.txt` is this one's) |
 
-**Install it from your browser: [konsumer.js.org/cardbuddy](https://konsumer.js.org/cardbuddy/)** (or put `cardbuddy.bin` from the releases on the SD card, for M5 Launcher).
+**Install it** from M5 Launcher's OTA menu or the [M5 Burner](https://docs.m5stack.com/en/download) app (both: _CardBuddy_ by konsumer), or from your browser: [konsumer.js.org/cardbuddy](https://konsumer.js.org/cardbuddy/) (or put `cardbuddy.bin` from the releases on the SD card, for M5 Launcher).
 
 ## What it does
 

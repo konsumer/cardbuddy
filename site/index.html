@@ -38,9 +38,18 @@
               <strong>An <a href="https://docs.m5stack.com/en/core/Cardputer-Adv">M5 Cardputer</a></strong> (the ADV, or the original), and a microSD card in it (FAT32).
             </li>
             <li><strong>A powered USB hub</strong> (or a USB-C OTG adapter with a charging port), for the FM-1 and your MIDI controllers. For recovering an FM-1 that won't start, a USB-C cable straight to it.</li>
-            <li>Chrome or Edge on a computer, and a USB-C cable that carries data</li>
+            <li>A computer and a USB-C cable that carries data, or just Wi-Fi if you use M5 Launcher</li>
           </ul>
-          <p class="note"><strong>Using M5 Launcher?</strong> You don't need to install it this way: cardbuddy is an app like any other there, and Launcher stays on the Cardputer. See the <a href="#launcher" data-tab="launcher">M5 Launcher</a> tab.</p>
+
+          <h2>The easy ways</h2>
+          <ul>
+            <li><strong>M5 Launcher</strong>, over Wi-Fi: in its <em>OTA</em> menu, find <em>CardBuddy</em> and install it. Launcher stays on the Cardputer, and cardbuddy is an app like any other there. See the <a href="#launcher" data-tab="launcher">M5 Launcher</a> tab.</li>
+            <li>
+              <strong><a href="https://docs.m5stack.com/en/download">M5 Burner</a></strong
+              >, M5Stack's desktop app: in its <em>Cardputer</em> list, find <em>CardBuddy</em> (by konsumer), <em>Download</em>, then <em>Burn</em>, with the Cardputer in download mode (step 1 below). Like this page, it replaces what's on the Cardputer's flash.
+            </li>
+          </ul>
+          <p>Or install it from this page, in Chrome or Edge:</p>
 
           <h2>1. Download mode</h2>
           <ol>
@@ -76,7 +85,14 @@
       <div data-page="launcher" hidden>
         <section class="panel">
           <p><a href="https://bmorcelli.github.io/Launcher/">M5 Launcher</a> keeps several apps on the Cardputer and starts the one you pick. cardbuddy is one of them: the Cardputer can run other things when you don't need it.</p>
+          <h2>Over Wi-Fi</h2>
+          <ol>
+            <li>In Launcher: <em>OTA</em>, and connect to Wi-Fi if it asks.</li>
+            <li>Find <em>CardBuddy</em> (by konsumer): search for it, or look in the Cardputer list. It's the same one as in <a href="https://docs.m5stack.com/en/download">M5 Burner</a>.</li>
+            <li>Pick it, then <em>Install</em>. Launcher starts it.</li>
+          </ol>
           <h2>From the SD card</h2>
+          <p>No Wi-Fi, or you want a build that isn't in the list yet:</p>
           <ol>
             <li>Get <code>cardbuddy.bin</code>: <a id="appbin" href="https://github.com/konsumer/cardbuddy/releases/latest/download/cardbuddy.bin">the latest release</a>.</li>
             <li>Copy it onto the Cardputer's SD card (anywhere: the card's top level is fine).</li>
